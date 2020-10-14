@@ -1,5 +1,7 @@
 package poker
 
+import "strconv"
+
 type Type = uint
 
 const (
@@ -11,7 +13,7 @@ const (
 	TypeDiamond     = 0     // 方块
 )
 
-type Value = uint
+type Value = int
 
 const (
 	V3           = 3     // 3
@@ -34,6 +36,7 @@ const (
 type IPoker interface {
 	Type() Type
 	Value() Value
+	Show() string
 }
 
 type Poker struct {
@@ -54,6 +57,40 @@ func (p Poker) Type() Type {
 
 func (p Poker) Value() Value {
 	return p.v
+}
+
+func (p Poker) Show() string {
+	showstring := ""
+	if p.t == TypeSpade {
+		showstring += "[♠"
+	} else if p.t == TypeHeart {
+		showstring += "[♥"
+	} else if p.t == TypeClub {
+		showstring += "[♣"
+	} else if p.t == TypeDiamond {
+		showstring += "[♦"
+	} else if p.t == TypeLittleJoker {
+		showstring += "[Little🃏]"
+		return showstring
+	} else if p.t == TypeBigJoker {
+		showstring += "[Big🃏]"
+		return showstring
+	}
+
+	if p.v >= 3 && p.v <= 10 {
+		return "-" + showstring + strconv.Itoa(p.v) + "]"
+	} else if p.v == 11 {
+		return " " + showstring + "-J" + "]"
+	} else if p.v == 12 {
+		return " " + showstring + "-Q" + "]"
+	} else if p.v == 13 {
+		return " " + showstring + "-K" + "]"
+	} else if p.v == 14 {
+		return " " + showstring + "-A" + "]"
+	} else if p.v == 15 {
+		return " " + showstring + "-2" + "]"
+	}
+	return "[unknown]"
 }
 
 // OnePack 一副牌

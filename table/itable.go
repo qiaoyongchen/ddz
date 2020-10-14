@@ -15,7 +15,7 @@ type Status int
 
 const (
 	Prepare Status = 0 // 准备中
-	Playing Status = 1 // 进行中
+	Playing Status = 1 // 玩游戏中
 	End     Status = 2 // 结束
 )
 
@@ -40,7 +40,7 @@ type Table struct {
 
 // NewTable 新建一个牌桌
 func NewTable(i int) *Table {
-	return &Table{
+	t := &Table{
 		i:           i,
 		status:      Prepare,
 		players:     []player.IPlayer{nil, nil, nil, nil},
@@ -55,6 +55,7 @@ func NewTable(i int) *Table {
 			make(chan message.Message),
 		},
 	}
+	return t
 }
 
 // Players 列出所有玩家
@@ -101,4 +102,9 @@ func (p *Table) real() {
 		}
 		p.pokers = p.pokers[max:]
 	}
+}
+
+// DaemonRun 后台定时执行
+func (p *Table) DaemonRun() {
+
 }
