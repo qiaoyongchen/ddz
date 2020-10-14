@@ -11,12 +11,21 @@ import (
 	"errors"
 )
 
-type Status int
+type Status = int
 
 const (
 	Prepare Status = 0 // 准备中
 	Playing Status = 1 // 玩游戏中
 	End     Status = 2 // 结束
+)
+
+type StatusPlaying = int
+
+const (
+	PlayingAllReady = 0 // 全部已准备
+	PlayingShuffled = 1 // 已洗牌
+	PlayingRealed   = 2 // 已发牌
+	PlayingPlaying  = 3 // 出牌中
 )
 
 type ITable interface {
@@ -28,6 +37,7 @@ type ITable interface {
 type Table struct {
 	i            int                    // 桌号
 	status       Status                 // 状态
+	subStatus    StatusPlaying          // playing子状态
 	players      []player.IPlayer       // 玩家
 	pokers       []poker.IPoker         // 牌桌上的牌
 	ruler        ruler.IRuler           // 规则检查器
@@ -47,12 +57,12 @@ func NewTable(i int) *Table {
 		pokers:      poker.OnePack(),
 		ruler:       ruler.NewRuler(),
 		full:        4,
-		recvChannel: make(chan message.Message),
+		recvChannel: make(chan message.Message, 1000),
 		sendChannels: []chan message.Message{
-			make(chan message.Message),
-			make(chan message.Message),
-			make(chan message.Message),
-			make(chan message.Message),
+			make(chan message.Message, 10),
+			make(chan message.Message, 10),
+			make(chan message.Message, 10),
+			make(chan message.Message, 10),
 		},
 	}
 	return t
@@ -106,5 +116,38 @@ func (p *Table) real() {
 
 // DaemonRun 后台定时执行
 func (p *Table) DaemonRun() {
+	go func() {
+		// 每秒检查一次事件变动
+		t := time.NewTicker(time.Second)
+		for {
+			<-t.C
+			p.daemonCheck()
+		}
+	}()
 
+	go func() {
+		// 检查消息
+		p.daemonRecv()
+	}()
+}
+
+// 检查事件变动
+func (p *Table) daemonCheck() {
+	//for k, p := range p.Players() {
+
+	//}
+}
+
+// 检查消息
+func (p *Table) daemonRecv() {
+	for {
+		msg := <-p.recvChannel
+		if msg.T == message.TypeChat {
+			for k := range p.sendChannels {
+				go func(k int) {
+					p.sendChannels[k] <- msg
+				}(k)
+			}
+		}
+	}
 }

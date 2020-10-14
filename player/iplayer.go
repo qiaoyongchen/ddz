@@ -68,7 +68,7 @@ func (p *Player) Sit(i int) {
 	go func() {
 		select {
 		case msg := <-p.recv:
-			fmt.Println(msg)
+			fmt.Println(p.name + " recive: [" + msg.Chat + "]")
 		}
 	}()
 }
@@ -97,4 +97,16 @@ func (p *Player) SetSend(send chan message.Message) {
 // Name Name
 func (p *Player) Name() string {
 	return p.name
+}
+
+// Chat Chat
+func (p *Player) Chat(content string) {
+	p.send <- message.Message{
+		T:             message.TypeChat,
+		ST:            0,
+		Chat:          p.name + " say: " + content,
+		PlayerCurrent: 0,
+		PlayerTurn:    0,
+		Pokers:        nil,
+	}
 }

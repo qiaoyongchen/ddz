@@ -24,9 +24,6 @@ func main() {
 	table0 := table.NewTable(0)
 	table1 := table.NewTable(0)
 	table2 := table.NewTable(0)
-	table3 := table.NewTable(0)
-	table4 := table.NewTable(0)
-	table5 := table.NewTable(0)
 
 	// 模拟玩家坐到桌位
 	table0.PlayerSit(0, player0)
@@ -37,13 +34,8 @@ func main() {
 	table1.PlayerSit(1, player5)
 	table1.PlayerSit(1, player6)
 
-	// 模拟房间，放入6个桌子
-	room1 := room.NewRoom([]table.ITable{
-		table0, table1, table2,
-		table3, table4, table5,
-	})
-
-	//fmt.Println(room1.Tables())
+	// 模拟房间，放入3个桌子
+	room1 := room.NewRoom([]table.ITable{table0, table1, table2})
 
 	for kt, t := range room1.Tables() {
 		tname := "桌" + strconv.Itoa(kt) + ":"
@@ -58,6 +50,13 @@ func main() {
 			fmt.Println("第" + strconv.Itoa(kp) + "个位子: " + pname)
 		}
 	}
+
+	// 第一张桌子开始开张
+	table0.DaemonRun()
+
+	// 玩家1进行聊天，测试广播
+	println()
+	player0.Chat("hello, every one")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
