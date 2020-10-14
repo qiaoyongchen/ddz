@@ -26,47 +26,58 @@ type ITable interface {
 
 // Table 桌子
 type Table struct {
-	i            int                // 桌号
-	status       Status             // 状态
-	players      []player.IPlayer   // 玩家
-	pokers       []poker.IPoker     // 牌桌上的牌
-	ruler        ruler.IRuler       // 规则检查器
-	recvChannel  chan interface{}   // 接受频道
-	sendChannels []chan interface{} // 发送频道
+	i            int                    // 桌号
+	status       Status                 // 状态
+	players      []player.IPlayer       // 玩家
+	pokers       []poker.IPoker         // 牌桌上的牌
+	ruler        ruler.IRuler           // 规则检查器
+	recvChannel  chan message.Message   // 接受频道
+	sendChannels []chan message.Message // 发送频道
 	full         int
 
 	playerCurrent int // 当前出牌人
 }
 
+// NewTable 新建一个牌桌
+func NewTable(i int) *Table {
+	return &Table{
+		i:           i,
+		status:      Prepare,
+		players:     []player.IPlayer{nil, nil, nil, nil},
+		pokers:      poker.OnePack(),
+		ruler:       ruler.NewRuler(),
+		full:        4,
+		recvChannel: make(chan message.Message),
+		sendChannels: []chan message.Message{
+			make(chan message.Message),
+			make(chan message.Message),
+			make(chan message.Message),
+			make(chan message.Message),
+		},
+	}
+}
+
 // Players 列出所有玩家
-func (p Table) Players() []player.IPlayer {
+func (p *Table) Players() []player.IPlayer {
 	return p.players
 }
 
 // PlayerSit 玩家指定一个位置坐下
-func (p Table) PlayerSit(position int, player player.IPlayer) error {
+func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 	if p.players[position] != nil {
 		return errors.New("该位置已有人")
 	}
+
 	p.players[position] = player
 	player.Sit(position)
+	player.SetRevc(p.sendChannels[position])
+	player.SetSend(p.recvChannel)
+
 	return nil
 }
 
-// NewTable 新建一个牌桌
-func NewTable(i int) Table {
-	return Table{
-		i:       i,
-		status:  Prepare,
-		players: []player.IPlayer{nil, nil, nil, nil},
-		pokers:  poker.OnePack(),
-		ruler:   ruler.NewRuler(),
-		full:    4,
-	}
-}
-
 // 洗牌
-func (p Table) shuffle() {
+func (p *Table) shuffle() {
 	rand.Seed(time.Now().Unix())
 	max := len(p.players) - 1
 	for i := 0; i <= 1000; i++ {
@@ -77,7 +88,7 @@ func (p Table) shuffle() {
 }
 
 // 发牌
-func (p Table) real() {
+func (p *Table) real() {
 	for i := 0; i < p.full; i++ {
 		min := i * 13
 		max := (i + 1) * 13

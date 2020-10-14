@@ -18,63 +18,83 @@ const (
 
 // IPlayer 玩家
 type IPlayer interface {
-	Left() []poker.IPoker   // 剩余牌
-	Played() []poker.IPoker // 出过得牌
-	Status() Status         // 状态
-	Sit(int)                // 坐在牌桌了
+	Left() []poker.IPoker         // 剩余牌
+	Played() []poker.IPoker       // 出过得牌
+	Status() Status               // 状态
+	Sit(int)                      // 坐在牌桌了
+	SetRevc(chan message.Message) // 设置接受管道
+	SetSend(chan message.Message) // 设置接受管道
+	Name() string                 // 玩家名字
 }
 
 // Player 玩家
 type Player struct {
+	name         string               // 玩家姓名
 	i            int                  // 座位号
 	pokersLeft   []poker.IPoker       // 剩余牌
 	pokersPlayed []poker.IPoker       // 出过的牌
 	status       Status               // 状态
-	recvChannel  chan message.Message // 接受频道
-	sencChannel  chan message.Message // 发送频道
+	recv         chan message.Message // 接受频道
+	send         chan message.Message // 发送频道
 }
 
 // NewPlayer NewPlayer
-func NewPlayer(recvc chan message.Message, sendc chan message.Message) Player {
-	return Player{
+func NewPlayer(name string) *Player {
+	return &Player{
 		pokersLeft:   []poker.IPoker{},
 		pokersPlayed: []poker.IPoker{},
 		status:       NotPrepare,
+		name:         name,
 	}
 }
 
 // Left Left
-func (p Player) Left() []poker.IPoker {
+func (p *Player) Left() []poker.IPoker {
 	return p.pokersLeft
 }
 
 // Played Played
-func (p Player) Played() []poker.IPoker {
+func (p *Player) Played() []poker.IPoker {
 	return p.pokersPlayed
 }
 
 // Status Status
-func (p Player) Status() Status {
+func (p *Player) Status() Status {
 	return p.status
 }
 
 // Sit 坐在牌桌了
-func (p Player) Sit(i int) {
+func (p *Player) Sit(i int) {
 	go func() {
 		select {
-		case msg := <-p.recvChannel:
+		case msg := <-p.recv:
 			fmt.Println(msg)
 		}
 	}()
 }
 
 // Play 出牌
-func (p Player) Play(pokers []poker.IPoker) {
-	p.sencChannel <- message.Message{
+func (p *Player) Play(pokers []poker.IPoker) {
+	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerPlay,
 		Chat:          "",
 		PlayerCurrent: p.i,
 		Pokers:        pokers,
 	}
+}
+
+// SetRevc SetRevc
+func (p *Player) SetRevc(recv chan message.Message) {
+	p.recv = recv
+}
+
+// SetSend SetSend
+func (p *Player) SetSend(send chan message.Message) {
+	p.send = send
+}
+
+// Name Name
+func (p *Player) Name() string {
+	return p.name
 }
