@@ -78,17 +78,17 @@ func (p Poker) Show() string {
 	}
 
 	if p.v >= 3 && p.v <= 10 {
-		return "-" + showstring + strconv.Itoa(p.v) + "]"
+		return showstring + "-" + strconv.Itoa(p.v) + "]"
 	} else if p.v == 11 {
-		return " " + showstring + "-J" + "]"
+		return showstring + "-J" + "]"
 	} else if p.v == 12 {
-		return " " + showstring + "-Q" + "]"
+		return showstring + "-Q" + "]"
 	} else if p.v == 13 {
-		return " " + showstring + "-K" + "]"
+		return showstring + "-K" + "]"
 	} else if p.v == 14 {
-		return " " + showstring + "-A" + "]"
+		return showstring + "-A" + "]"
 	} else if p.v == 15 {
-		return " " + showstring + "-2" + "]"
+		return showstring + "-2" + "]"
 	}
 	return "[unknown]"
 }

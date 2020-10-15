@@ -79,75 +79,112 @@ func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 		return errors.New("该位置已有人")
 	}
 
-	p.players[position] = player
-	player.Sit(position)
+	// 设置玩家通信管道
 	player.SetRevc(p.sendChannels[position])
 	player.SetSend(p.recvChannel)
+
+	// 设置玩家在牌桌上的位置
+	p.players[position] = player
+
+	// 通知玩家就坐玩家就坐
+	player.Sit(position)
 
 	return nil
 }
 
 // 洗牌
 func (p *Table) shuffle() {
-	rand.Seed(time.Now().Unix())
-	max := len(p.players) - 1
+	max := len(p.pokers) - 1
 	for i := 0; i <= 1000; i++ {
-		fst := rand.Intn(max)
-		snd := rand.Intn(max)
+		rand.Seed(time.Now().UnixNano())
+		fst := rand.Intn(max + 1)
+		rand.Seed(time.Now().UnixNano() + int64(fst))
+		snd := rand.Intn(max + 1)
 		p.pokers[fst], p.pokers[snd] = p.pokers[snd], p.pokers[fst]
 	}
+
+	p.broadcast(message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerShuffle,
+		Chat:          "",
+		PlayerCurrent: 0,
+		Pokers:        nil,
+	})
 }
 
 // 发牌
 func (p *Table) real() {
 	for i := 0; i < p.full; i++ {
-		min := i * 13
-		max := (i + 1) * 13
 		p.sendChannels[i] <- message.Message{
 			T:             message.TypeRuler,
 			ST:            message.SubTypeRulerReal,
 			Chat:          "",
 			PlayerCurrent: i,
-			Pokers:        p.pokers[min:max],
+			Pokers:        p.pokers[0:13],
 		}
-		p.pokers = p.pokers[max:]
+		p.pokers = p.pokers[13:]
 	}
 }
 
 // DaemonRun 后台定时执行
 func (p *Table) DaemonRun() {
 	go func() {
-		// 每秒检查一次事件变动
-		t := time.NewTicker(time.Second)
 		for {
-			<-t.C
-			p.daemonCheck()
-		}
-	}()
+			msg := <-p.recvChannel
+			switch msg.T {
+			// 聊天信息
+			case message.TypeChat:
+				p.broadcast(msg)
+			// 游戏中
+			case message.TypeRuler:
+				switch msg.ST {
+				// 已就坐
+				case message.SubTypeRulerSit:
+					p.broadcast(msg)
+				// 已准备
+				case message.SubTypeRulerReady:
+					p.broadcast(msg)
+					// 每次收到玩家已准备信息都检查一次是否可以开始打牌了
+					if p.allReady() {
+						// 洗牌
+						p.shuffle()
 
-	go func() {
-		// 检查消息
-		p.daemonRecv()
-	}()
-}
+						// 停顿1秒，给客户端显示洗牌画面
+						time.Sleep(time.Second)
 
-// 检查事件变动
-func (p *Table) daemonCheck() {
-	//for k, p := range p.Players() {
-
-	//}
-}
-
-// 检查消息
-func (p *Table) daemonRecv() {
-	for {
-		msg := <-p.recvChannel
-		if msg.T == message.TypeChat {
-			for k := range p.sendChannels {
-				go func(k int) {
-					p.sendChannels[k] <- msg
-				}(k)
+						// 发牌
+						p.real()
+					}
+				}
 			}
 		}
+	}()
+}
+
+// 广播信息
+func (p *Table) broadcast(msg message.Message) {
+	for k := range p.sendChannels {
+		go func(k int) {
+			p.sendChannels[k] <- msg
+		}(k)
 	}
+}
+
+func (p *Table) sendone(i int, msg message.Message) {
+	go func() {
+		p.sendChannels[i] <- msg
+	}()
+}
+
+// 检查是否所有玩家都准备好了
+func (p *Table) allReady() bool {
+	for _, v := range p.players {
+		if v == nil {
+			return false
+		}
+		if v.Status() != player.Prepare {
+			return false
+		}
+	}
+	return true
 }

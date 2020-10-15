@@ -8,17 +8,18 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
 )
 
 func main() {
 	// 模拟一些玩家
-	player0 := player.NewPlayer("零桌玩家1")
-	player1 := player.NewPlayer("零桌玩家2")
-	player2 := player.NewPlayer("零桌玩家3")
-	player3 := player.NewPlayer("零桌玩家4")
-	player4 := player.NewPlayer("一桌玩家1")
-	player5 := player.NewPlayer("一桌玩家2")
-	player6 := player.NewPlayer("一桌玩家3")
+	player0 := player.NewPlayer("零桌玩家0")
+	player1 := player.NewPlayer("零桌玩家1")
+	player2 := player.NewPlayer("零桌玩家2")
+	player3 := player.NewPlayer("零桌玩家3")
+	player4 := player.NewPlayer("一桌玩家0")
+	player5 := player.NewPlayer("一桌玩家1")
+	player6 := player.NewPlayer("一桌玩家2")
 
 	// 模拟一些桌子
 	table0 := table.NewTable(0)
@@ -57,6 +58,15 @@ func main() {
 	// 玩家1进行聊天，测试广播
 	println()
 	player0.Chat("hello, every one")
+
+	// 玩家准备开始玩游戏
+	player0.Prepare()
+	time.Sleep(time.Second / 4)
+	player1.Prepare()
+	time.Sleep(time.Second / 4)
+	player2.Prepare()
+	time.Sleep(time.Second / 4)
+	player3.Prepare()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

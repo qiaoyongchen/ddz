@@ -3,17 +3,19 @@ package player
 import (
 	"ddz/message"
 	"ddz/poker"
+	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Status 状态
 type Status = int8
 
 const (
-	Break      = -1 // 断线
-	NotPrepare = 0  // 未准备
-	Prepare    = 1  // 已准备
-	Playing    = 2  // 进行中
+	Break   = -1 // 断线
+	Sit     = 0  // 已就坐
+	Prepare = 1  // 已准备
+	Playing = 2  // 进行中
 )
 
 // IPlayer 玩家
@@ -43,7 +45,7 @@ func NewPlayer(name string) *Player {
 	return &Player{
 		pokersLeft:   []poker.IPoker{},
 		pokersPlayed: []poker.IPoker{},
-		status:       NotPrepare,
+		status:       Sit,
 		name:         name,
 	}
 }
@@ -65,12 +67,18 @@ func (p *Player) Status() Status {
 
 // Sit 坐在牌桌了
 func (p *Player) Sit(i int) {
-	go func() {
-		select {
-		case msg := <-p.recv:
-			fmt.Println(p.name + " recive: [" + msg.Chat + "]")
-		}
-	}()
+	// player设置座位号
+	p.i = i
+
+	// 通知牌桌已就坐
+	p.send <- message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerSit,
+		Chat:          "",
+		PlayerCurrent: i,
+		PlayerTurn:    0,
+		Pokers:        nil,
+	}
 }
 
 // Play 出牌
@@ -84,12 +92,46 @@ func (p *Player) Play(pokers []poker.IPoker) {
 	}
 }
 
-// SetRevc SetRevc
+// SetRevc 玩家设置接受牌桌信息的管道
+// 设置完立刻监听
 func (p *Player) SetRevc(recv chan message.Message) {
 	p.recv = recv
+
+	go func() {
+		for {
+			select {
+			case msg := <-p.recv:
+				switch msg.T {
+				// 聊天信息
+				case message.TypeChat:
+					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
+				// 游戏中
+				case message.TypeRuler:
+					switch msg.ST {
+					// 已就坐
+					case message.SubTypeRulerSit:
+						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
+					// 已准备
+					case message.SubTypeRulerReady:
+						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
+					// 洗牌中
+					case message.SubTypeRulerShuffle:
+						fmt.Println(p.name + " recive: [洗牌中]")
+					// 发牌
+					case message.SubTypeRulerReal:
+						showpokers := ""
+						for _, v := range msg.Pokers {
+							showpokers += v.Show()
+						}
+						fmt.Println(p.name + " recive: [发牌:( " + showpokers + " )]")
+					}
+				}
+			}
+		}
+	}()
 }
 
-// SetSend SetSend
+// SetSend 玩家设置发送牌桌信息的管道
 func (p *Player) SetSend(send chan message.Message) {
 	p.send = send
 }
@@ -109,4 +151,23 @@ func (p *Player) Chat(content string) {
 		PlayerTurn:    0,
 		Pokers:        nil,
 	}
+}
+
+// Prepare 准备
+func (p *Player) Prepare() error {
+	if p.status != Sit {
+		return errors.New("状态出错，不能准备开始")
+	}
+
+	// 玩家状态改为已准备
+	p.status = Prepare
+
+	p.send <- message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerReady,
+		Chat:          "",
+		PlayerCurrent: p.i,
+		Pokers:        nil,
+	}
+	return nil
 }
