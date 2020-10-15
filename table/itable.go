@@ -150,7 +150,7 @@ func (p *Table) DaemonRun() {
 						p.shuffle()
 
 						// 停顿1秒，给客户端显示洗牌画面
-						time.Sleep(time.Second)
+						//time.Sleep(time.Second)
 
 						// 发牌
 						p.real()
@@ -163,17 +163,16 @@ func (p *Table) DaemonRun() {
 
 // 广播信息
 func (p *Table) broadcast(msg message.Message) {
+
+	// waitgroup
+
 	for k := range p.sendChannels {
-		go func(k int) {
-			p.sendChannels[k] <- msg
-		}(k)
+		p.sendChannels[k] <- msg
 	}
 }
 
 func (p *Table) sendone(i int, msg message.Message) {
-	go func() {
-		p.sendChannels[i] <- msg
-	}()
+	p.sendChannels[i] <- msg
 }
 
 // 检查是否所有玩家都准备好了
