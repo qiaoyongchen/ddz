@@ -148,13 +148,14 @@ func (p *Table) DaemonRun() {
 					if p.allReady() {
 						// 洗牌
 						p.shuffle()
-
-						// 停顿1秒，给客户端显示洗牌画面
-						//time.Sleep(time.Second)
-
+						// 停顿1秒，给客户端停留，显示洗牌画面
+						time.Sleep(time.Second)
 						// 发牌
 						p.real()
 					}
+					// 出牌
+				case message.SubTypeRulerPlay:
+					p.broadcast(msg)
 				}
 			}
 		}

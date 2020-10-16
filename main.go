@@ -2,6 +2,7 @@ package main
 
 import (
 	"ddz/player"
+	"ddz/poker"
 	"ddz/room"
 	"ddz/table"
 	"fmt"
@@ -67,6 +68,13 @@ func main() {
 	player2.Prepare()
 	time.Sleep(time.Second / 4)
 	player3.Prepare()
+
+	// 停顿两秒再出牌,模拟洗牌和发牌过程中的耗时
+	time.Sleep(time.Second * 2)
+
+	// 用户0出♥3，该玩家如果有的话正常显示，该玩家如果没有的话则报错
+	// 需要多试几次
+	player0.Play([]poker.IPoker{poker.NewPoker(poker.TypeHeart, poker.V3)})
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

@@ -82,7 +82,14 @@ func (p *Player) Sit(i int) {
 }
 
 // Play 出牌
-func (p *Player) Play(pokers []poker.IPoker) {
+func (p *Player) Play(pokers []poker.IPoker) error {
+	for _, pk := range pokers {
+		if !p.pokerIsMine(pk) {
+			// TODO debug info
+			fmt.Println("system: " + p.name + "没有这张牌 - " + pk.Show())
+			return errors.New("没有这张牌")
+		}
+	}
 	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerPlay,
@@ -90,6 +97,16 @@ func (p *Player) Play(pokers []poker.IPoker) {
 		PlayerCurrent: p.i,
 		Pokers:        pokers,
 	}
+	return nil
+}
+
+func (p *Player) pokerIsMine(pk poker.IPoker) bool {
+	for _, pl := range p.pokersLeft {
+		if pl.Type() == pk.Type() && pl.Value() == pk.Value() {
+			return true
+		}
+	}
+	return false
 }
 
 // SetRevc 玩家设置接受牌桌信息的管道
@@ -124,6 +141,14 @@ func (p *Player) SetRevc(recv chan message.Message) {
 							showpokers += v.Show()
 						}
 						fmt.Println(p.name + " recive: [发牌:( " + showpokers + " )]")
+						p.pokersLeft = msg.Pokers
+					// 出牌
+					case message.SubTypeRulerPlay:
+						showpokers := ""
+						for _, v := range msg.Pokers {
+							showpokers += v.Show()
+						}
+						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showpokers + " )]")
 					}
 				}
 			}
