@@ -75,6 +75,9 @@ func main() {
 	// 用户0出♥3，该玩家如果有的话正常显示，该玩家如果没有的话则报错
 	// 需要多试几次
 	player0.Play([]poker.IPoker{poker.NewPoker(poker.TypeHeart, poker.V3)})
+	// 模拟用户1牌全出了(暂时先不考虑出牌规则)
+	player0.PlayAll()
+	player1.PlayAll()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

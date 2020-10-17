@@ -100,6 +100,30 @@ func (p *Player) Play(pokers []poker.IPoker) error {
 	return nil
 }
 
+// PlayNone 不出
+func (p *Player) PlayNone() error {
+	p.send <- message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerPlay,
+		Chat:          "",
+		PlayerCurrent: p.i,
+		Pokers:        []poker.IPoker{},
+	}
+	return nil
+}
+
+// PlayAll 全部出掉
+func (p *Player) PlayAll() error {
+	p.send <- message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerPlay,
+		Chat:          "",
+		PlayerCurrent: p.i,
+		Pokers:        p.pokersLeft,
+	}
+	return nil
+}
+
 func (p *Player) pokerIsMine(pk poker.IPoker) bool {
 	for _, pl := range p.pokersLeft {
 		if pl.Type() == pk.Type() && pl.Value() == pk.Value() {
@@ -121,6 +145,8 @@ func (p *Player) SetRevc(recv chan message.Message) {
 				switch msg.T {
 				// 聊天信息
 				case message.TypeChat:
+					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
+				case message.TypeNotice:
 					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
 				// 游戏中
 				case message.TypeRuler:
@@ -149,6 +175,11 @@ func (p *Player) SetRevc(recv chan message.Message) {
 							showpokers += v.Show()
 						}
 						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showpokers + " )]")
+					case message.SubTypeRulerChangePlayer:
+						fmt.Println(p.name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
+					case message.SubTypeRulerEnd:
+						fmt.Println(p.name + " recive: [本局游戏结束]")
+						// TODO 一些玩家本局数据恢复的设置
 					}
 				}
 			}

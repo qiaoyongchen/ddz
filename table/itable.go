@@ -51,13 +51,14 @@ type Table struct {
 // NewTable 新建一个牌桌
 func NewTable(i int) *Table {
 	t := &Table{
-		i:           i,
-		status:      Prepare,
-		players:     []player.IPlayer{nil, nil, nil, nil},
-		pokers:      poker.OnePack(),
-		ruler:       ruler.NewRuler(),
-		full:        4,
-		recvChannel: make(chan message.Message, 1000),
+		i:             i,
+		status:        Prepare,
+		players:       []player.IPlayer{nil, nil, nil, nil},
+		pokers:        poker.OnePack(),
+		ruler:         ruler.NewRuler(),
+		full:          4,
+		recvChannel:   make(chan message.Message, 1000),
+		playerCurrent: -1,
 		sendChannels: []chan message.Message{
 			make(chan message.Message, 10),
 			make(chan message.Message, 10),
@@ -152,21 +153,76 @@ func (p *Table) DaemonRun() {
 						time.Sleep(time.Second)
 						// 发牌
 						p.real()
+						// 指定第一个出牌玩家
+						p.NextPlayer(-1)
 					}
-					// 出牌
 				case message.SubTypeRulerPlay:
+					// 检查现在是否轮到该用户出牌
+					if p.playerCurrent != msg.PlayerCurrent {
+						showpokers := ""
+						for _, v := range msg.Pokers {
+							showpokers += v.Show()
+						}
+						p.sendone(msg.PlayerCurrent, message.Message{
+							T:             message.TypeNotice,
+							ST:            0,
+							Chat:          "system: 现在没有轮到" + p.players[msg.PlayerCurrent].Name() + "出牌",
+							PlayerCurrent: msg.PlayerCurrent,
+							PlayerTurn:    msg.PlayerCurrent,
+							Pokers:        msg.Pokers,
+						})
+						continue
+					}
+
+					// 出牌广播
 					p.broadcast(msg)
+
+					// 每次玩家出完牌都检查是不是游戏结束了
+					// 如果结束就广播结束通知，否则切换到下一个玩家出牌
+					if len(msg.Pokers) == len(p.players[msg.PlayerCurrent].Left()) {
+						p.end()
+						// TODO 一些恢复牌桌初始化的设置
+					} else {
+						p.NextPlayer(p.playerCurrent)
+					}
 				}
 			}
 		}
 	}()
 }
 
+// NextPlayer 切换到下一个用户
+func (p *Table) NextPlayer(current int) {
+	nextplayer := p.nextPlayer(current)
+	p.broadcast(message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerChangePlayer,
+		Chat:          "",
+		PlayerCurrent: nextplayer,
+		Pokers:        nil,
+	})
+	p.playerCurrent = nextplayer
+}
+
+// 获取下一个用户
+func (p *Table) nextPlayer(current int) int {
+	return (current + 1) % len(p.players)
+}
+
+// 广播游戏结束通知
+func (p *Table) end() {
+	p.broadcast(message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerEnd,
+		Chat:          "",
+		PlayerCurrent: -1,
+		Pokers:        nil,
+	})
+}
+
 // 广播信息
 func (p *Table) broadcast(msg message.Message) {
-
-	// waitgroup
-
+	// TODO waitgroup
 	for k := range p.sendChannels {
 		p.sendChannels[k] <- msg
 	}
