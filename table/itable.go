@@ -35,17 +35,19 @@ type ITable interface {
 
 // Table 桌子
 type Table struct {
-	i            int                    // 桌号
-	status       Status                 // 状态
-	subStatus    StatusPlaying          // playing子状态
-	players      []player.IPlayer       // 玩家
-	pokers       []poker.IPoker         // 牌桌上的牌
-	ruler        ruler.IRuler           // 规则检查器
-	recvChannel  chan message.Message   // 接受频道
-	sendChannels []chan message.Message // 发送频道
-	full         int
-
-	playerCurrent int // 当前出牌人
+	i               int                        // 桌号
+	status          Status                     // 状态
+	subStatus       StatusPlaying              // playing子状态
+	players         []player.IPlayer           // 玩家
+	pokers          []poker.IPoker             // 牌桌上的牌
+	ruler           ruler.IRuler               // 规则检查器
+	recvChannel     chan message.Message       // 接受频道
+	sendChannels    []chan message.Message     // 发送频道
+	full            int                        // 牌桌满用户数
+	maxPokers       []poker.IPoker             // 当前最大牌
+	playerMaxPokers int                        // 当前最大牌的出牌用户
+	playerCurrent   int                        // 当前出牌人
+	processors      map[message.Type]processor // 消息处理器
 }
 
 // NewTable 新建一个牌桌
@@ -65,6 +67,7 @@ func NewTable(i int) *Table {
 			make(chan message.Message, 10),
 			make(chan message.Message, 10),
 		},
+		processors: make(map[message.Type]processor),
 	}
 	return t
 }
@@ -72,6 +75,16 @@ func NewTable(i int) *Table {
 // Players 列出所有玩家
 func (p *Table) Players() []player.IPlayer {
 	return p.players
+}
+
+func (p *Table) getAndSetProcessor() (
+	setter func(message.Type, processorFunc), getter func(message.Type) processor) {
+	// TODO lock
+	return func(t message.Type, f processorFunc) {
+			p.processors[t] = f
+		}, func(t message.Type) processor {
+			return p.processors[t]
+		}
 }
 
 // PlayerSit 玩家指定一个位置坐下
