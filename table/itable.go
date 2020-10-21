@@ -19,15 +19,17 @@ const (
 	End     Status = 2 // 结束
 )
 
+// StatusPlaying 玩牌中的子状态
 type StatusPlaying = int
 
 const (
-	PlayingAllReady = 0 // 全部已准备
-	PlayingShuffled = 1 // 已洗牌
-	PlayingRealed   = 2 // 已发牌
-	PlayingPlaying  = 3 // 出牌中
+	PlayingAllReady StatusPlaying = 0 // 全部已准备
+	PlayingShuffled StatusPlaying = 1 // 已洗牌
+	PlayingRealed   StatusPlaying = 2 // 已发牌
+	PlayingPlaying  StatusPlaying = 3 // 出牌中
 )
 
+// ITable 牌桌
 type ITable interface {
 	Players() []player.IPlayer           // 列出所有玩家
 	PlayerSit(int, player.IPlayer) error // 玩家坐下
@@ -45,7 +47,7 @@ type Table struct {
 	sendChannels    []chan message.Message     // 发送频道
 	full            int                        // 牌桌满用户数
 	maxPokers       []poker.IPoker             // 当前最大牌
-	playerMaxPokers int                        // 当前最大牌的出牌用户
+	playerMaxPokers int                        // 当前最大牌的出牌玩家
 	playerCurrent   int                        // 当前出牌人
 	processors      map[message.Type]processor // 消息处理器
 }
@@ -69,6 +71,9 @@ func NewTable(i int) *Table {
 		},
 		processors: make(map[message.Type]processor),
 	}
+	setter, _ := t.getAndSetProcessor()
+	setter(message.TypeChat, chatProcessor)
+	setter(message.TypeRuler, rulerProcessor)
 	return t
 }
 
@@ -79,7 +84,6 @@ func (p *Table) Players() []player.IPlayer {
 
 func (p *Table) getAndSetProcessor() (
 	setter func(message.Type, processorFunc), getter func(message.Type) processor) {
-	// TODO lock
 	return func(t message.Type, f processorFunc) {
 			p.processors[t] = f
 		}, func(t message.Type) processor {
@@ -92,17 +96,12 @@ func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 	if p.players[position] != nil {
 		return errors.New("该位置已有人")
 	}
-
 	// 设置玩家通信管道
 	player.SetRevc(p.sendChannels[position])
 	player.SetSend(p.recvChannel)
-
-	// 设置玩家在牌桌上的位置
+	// 设置玩家在牌桌上的位置,通知玩家就坐玩家就坐
 	p.players[position] = player
-
-	// 通知玩家就坐玩家就坐
 	player.Sit(position)
-
 	return nil
 }
 
@@ -116,7 +115,6 @@ func (p *Table) shuffle() {
 		snd := rand.Intn(max + 1)
 		p.pokers[fst], p.pokers[snd] = p.pokers[snd], p.pokers[fst]
 	}
-
 	p.broadcast(message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerShuffle,
@@ -142,71 +140,18 @@ func (p *Table) real() {
 
 // DaemonRun 后台定时执行
 func (p *Table) DaemonRun() {
+	_, getter := p.getAndSetProcessor()
 	go func() {
 		for {
 			msg := <-p.recvChannel
-			switch msg.T {
-			// 聊天信息
-			case message.TypeChat:
-				p.broadcast(msg)
-			// 游戏中
-			case message.TypeRuler:
-				switch msg.ST {
-				// 已就坐
-				case message.SubTypeRulerSit:
-					p.broadcast(msg)
-				// 已准备
-				case message.SubTypeRulerReady:
-					p.broadcast(msg)
-					// 每次收到玩家已准备信息都检查一次是否可以开始打牌了
-					if p.allReady() {
-						// 洗牌
-						p.shuffle()
-						// 停顿1秒，给客户端停留，显示洗牌画面
-						time.Sleep(time.Second)
-						// 发牌
-						p.real()
-						// 指定第一个出牌玩家
-						p.NextPlayer(-1)
-					}
-				case message.SubTypeRulerPlay:
-					// 检查现在是否轮到该用户出牌
-					if p.playerCurrent != msg.PlayerCurrent {
-						showpokers := ""
-						for _, v := range msg.Pokers {
-							showpokers += v.Show()
-						}
-						p.sendone(msg.PlayerCurrent, message.Message{
-							T:             message.TypeNotice,
-							ST:            0,
-							Chat:          "system: 现在没有轮到" + p.players[msg.PlayerCurrent].Name() + "出牌",
-							PlayerCurrent: msg.PlayerCurrent,
-							PlayerTurn:    msg.PlayerCurrent,
-							Pokers:        msg.Pokers,
-						})
-						continue
-					}
-
-					// 出牌广播
-					p.broadcast(msg)
-
-					// 每次玩家出完牌都检查是不是游戏结束了
-					// 如果结束就广播结束通知，否则切换到下一个玩家出牌
-					if len(msg.Pokers) == len(p.players[msg.PlayerCurrent].Left()) {
-						p.end()
-						// TODO 一些恢复牌桌初始化的设置
-					} else {
-						p.NextPlayer(p.playerCurrent)
-					}
-				}
-			}
+			getter(msg.T).process(p, msg)
 		}
 	}()
 }
 
 // NextPlayer 切换到下一个用户
-func (p *Table) NextPlayer(current int) {
-	nextplayer := p.nextPlayer(current)
+func (p *Table) nextPlayer(current int) {
+	nextplayer := p._nextPlayer(current)
 	p.broadcast(message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerChangePlayer,
@@ -218,7 +163,7 @@ func (p *Table) NextPlayer(current int) {
 }
 
 // 获取下一个用户
-func (p *Table) nextPlayer(current int) int {
+func (p *Table) _nextPlayer(current int) int {
 	return (current + 1) % len(p.players)
 }
 
@@ -235,17 +180,17 @@ func (p *Table) end() {
 
 // 广播信息
 func (p *Table) broadcast(msg message.Message) {
-	// TODO waitgroup
 	for k := range p.sendChannels {
 		p.sendChannels[k] <- msg
 	}
 }
 
+// 发送给单个人
 func (p *Table) sendone(i int, msg message.Message) {
 	p.sendChannels[i] <- msg
 }
 
-// 检查是否所有玩家都准备好了
+// 全都准备好了吗?
 func (p *Table) allReady() bool {
 	for _, v := range p.players {
 		if v == nil {

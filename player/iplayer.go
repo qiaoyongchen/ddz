@@ -25,7 +25,7 @@ type IPlayer interface {
 	Status() Status               // 状态
 	Sit(int)                      // 坐在牌桌了
 	SetRevc(chan message.Message) // 设置接受管道
-	SetSend(chan message.Message) // 设置接受管道
+	SetSend(chan message.Message) // 设置发送管道
 	Name() string                 // 玩家名字
 }
 
