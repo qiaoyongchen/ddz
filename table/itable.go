@@ -71,9 +71,10 @@ func NewTable(i int) *Table {
 		},
 		processors: make(map[message.Type]processor),
 	}
+
 	setter, _ := t.getAndSetProcessor()
 	setter(message.TypeChat, chatProcessor)
-	setter(message.TypeRuler, rulerProcessor)
+	setter(message.TypeRuler, forPlayIsMyTurn(rulerProcessor))
 	return t
 }
 
@@ -96,10 +97,8 @@ func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 	if p.players[position] != nil {
 		return errors.New("该位置已有人")
 	}
-	// 设置玩家通信管道
 	player.SetRevc(p.sendChannels[position])
 	player.SetSend(p.recvChannel)
-	// 设置玩家在牌桌上的位置,通知玩家就坐玩家就坐
 	p.players[position] = player
 	player.Sit(position)
 	return nil
@@ -138,6 +137,30 @@ func (p *Table) real() {
 	}
 }
 
+// 全都准备好了吗?
+func (p *Table) allReady() bool {
+	for _, v := range p.players {
+		if v == nil {
+			return false
+		}
+		if v.Status() != player.Prepare {
+			return false
+		}
+	}
+	return true
+}
+
+// 准备好开始打牌啦
+// 洗牌 -> 发牌 ->  指定第一个出牌玩家
+func (p *Table) ready() {
+	if p.allReady() {
+		p.shuffle()
+		time.Sleep(time.Second)
+		p.real()
+		p.nextPlayer(-1)
+	}
+}
+
 // DaemonRun 后台定时执行
 func (p *Table) DaemonRun() {
 	_, getter := p.getAndSetProcessor()
@@ -167,17 +190,6 @@ func (p *Table) _nextPlayer(current int) int {
 	return (current + 1) % len(p.players)
 }
 
-// 广播游戏结束通知
-func (p *Table) end() {
-	p.broadcast(message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerEnd,
-		Chat:          "",
-		PlayerCurrent: -1,
-		Pokers:        nil,
-	})
-}
-
 // 广播信息
 func (p *Table) broadcast(msg message.Message) {
 	for k := range p.sendChannels {
@@ -190,15 +202,25 @@ func (p *Table) sendone(i int, msg message.Message) {
 	p.sendChannels[i] <- msg
 }
 
-// 全都准备好了吗?
-func (p *Table) allReady() bool {
-	for _, v := range p.players {
-		if v == nil {
-			return false
-		}
-		if v.Status() != player.Prepare {
-			return false
-		}
-	}
-	return true
+// 广播游戏结束通知
+func (p *Table) end(winner int) {
+	p.broadcast(message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerWinner,
+		Chat:          "",
+		PlayerCurrent: winner,
+		PlayerTurn:    0,
+		Pokers:        nil,
+	})
+	p.broadcast(message.Message{
+		T:             message.TypeRuler,
+		ST:            message.SubTypeRulerEnd,
+		Chat:          "",
+		PlayerCurrent: -1,
+		Pokers:        nil,
+	})
+	// 重新待玩家准备
+	p.status = Prepare
+	p.playerCurrent = -1
+	p.pokers = poker.OnePack()
 }

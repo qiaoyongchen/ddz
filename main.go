@@ -2,7 +2,6 @@ package main
 
 import (
 	"ddz/player"
-	"ddz/poker"
 	"ddz/room"
 	"ddz/table"
 	"fmt"
@@ -24,8 +23,8 @@ func main() {
 
 	// 模拟一些桌子
 	table0 := table.NewTable(0)
-	table1 := table.NewTable(0)
-	table2 := table.NewTable(0)
+	table1 := table.NewTable(1)
+	table2 := table.NewTable(2)
 
 	// 模拟玩家坐到桌位
 	table0.PlayerSit(0, player0)
@@ -36,12 +35,11 @@ func main() {
 	table1.PlayerSit(1, player5)
 	table1.PlayerSit(1, player6)
 
-	// 模拟房间，放入3个桌子
+	// 模拟房间，放入3个牌桌
 	room1 := room.NewRoom([]table.ITable{table0, table1, table2})
 
 	for kt, t := range room1.Tables() {
-		tname := "桌" + strconv.Itoa(kt) + ":"
-		fmt.Println(tname)
+		fmt.Println("桌号" + strconv.Itoa(kt) + ":")
 		for kp, p := range t.Players() {
 			pname := ""
 			if p == nil {
@@ -53,7 +51,7 @@ func main() {
 		}
 	}
 
-	// 第一张桌子开始开张
+	// 第一张桌子开张
 	table0.DaemonRun()
 
 	// 玩家1进行聊天，测试广播
@@ -72,12 +70,41 @@ func main() {
 	// 停顿两秒再出牌,模拟洗牌和发牌过程中的耗时
 	time.Sleep(time.Second * 2)
 
-	// 用户0出♥3，该玩家如果有的话正常显示，该玩家如果没有的话则报错
-	// 需要多试几次
-	player0.Play([]poker.IPoker{poker.NewPoker(poker.TypeHeart, poker.V3)})
-	// 模拟用户1牌全出了(暂时先不考虑出牌规则)
-	player0.PlayAll()
-	player1.PlayAll()
+	// 玩家1 出第一张牌
+	player0.PlayFirst()
+	time.Sleep(time.Second * 1)
+	player0.ShowLeft()
+	// 玩家1 不出
+	player1.PlayNone()
+	time.Sleep(time.Second * 1)
+	// 玩家2 全出
+	player2.PlayAll()
+	time.Sleep(time.Second * 1)
+
+	fmt.Println("第一局结束........................................")
+	// 结束
+	time.Sleep(time.Second * 2)
+
+	// 玩家准备开始玩游戏
+	player0.Prepare()
+	time.Sleep(time.Second / 4)
+	player1.Prepare()
+	time.Sleep(time.Second / 4)
+	player2.Prepare()
+	time.Sleep(time.Second / 4)
+	player3.Prepare()
+
+	// 停顿两秒再出牌,模拟洗牌和发牌过程中的耗时
+	time.Sleep(time.Second * 2)
+
+	// 玩家1 出第一张牌
+	player0.PlayFirst()
+	time.Sleep(time.Second * 2)
+	player0.ShowLeft()
+	// 玩家1 不出
+	player1.PlayNone()
+	// 玩家2 全出
+	player2.PlayAll()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

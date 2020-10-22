@@ -25,6 +25,7 @@ const (
 	SubTypeRulerPlay         = 4 // 出牌
 	SubTypeRulerEnd          = 5 // 游戏结束
 	SubTypeRulerChangePlayer = 6 // 改变出牌人
+	SubTypeRulerWinner       = 7 // 获胜
 )
 
 // Message 消息

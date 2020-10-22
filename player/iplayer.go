@@ -55,6 +55,19 @@ func (p *Player) Left() []poker.IPoker {
 	return p.pokersLeft
 }
 
+// ShowLeft 打印剩余牌
+func (p *Player) ShowLeft() {
+	fmt.Println(showPokers(p.Left()))
+}
+
+func showPokers(pokers []poker.IPoker) string {
+	showpokers := ""
+	for _, v := range pokers {
+		showpokers += v.Show()
+	}
+	return showpokers
+}
+
 // Played Played
 func (p *Player) Played() []poker.IPoker {
 	return p.pokersPlayed
@@ -67,10 +80,7 @@ func (p *Player) Status() Status {
 
 // Sit 坐在牌桌了
 func (p *Player) Sit(i int) {
-	// player设置座位号
 	p.i = i
-
-	// 通知牌桌已就坐
 	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerSit,
@@ -85,8 +95,6 @@ func (p *Player) Sit(i int) {
 func (p *Player) Play(pokers []poker.IPoker) error {
 	for _, pk := range pokers {
 		if !p.pokerIsMine(pk) {
-			// TODO debug info
-			fmt.Println("system: " + p.name + "没有这张牌 - " + pk.Show())
 			return errors.New("没有这张牌")
 		}
 	}
@@ -102,26 +110,17 @@ func (p *Player) Play(pokers []poker.IPoker) error {
 
 // PlayNone 不出
 func (p *Player) PlayNone() error {
-	p.send <- message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerPlay,
-		Chat:          "",
-		PlayerCurrent: p.i,
-		Pokers:        []poker.IPoker{},
-	}
-	return nil
+	return p.Play([]poker.IPoker{})
 }
 
 // PlayAll 全部出掉
 func (p *Player) PlayAll() error {
-	p.send <- message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerPlay,
-		Chat:          "",
-		PlayerCurrent: p.i,
-		Pokers:        p.pokersLeft,
-	}
-	return nil
+	return p.Play(p.pokersLeft)
+}
+
+// PlayFirst 出第一张牌(测试)
+func (p *Player) PlayFirst() error {
+	return p.Play(p.pokersLeft[0:1])
 }
 
 func (p *Player) pokerIsMine(pk poker.IPoker) bool {
@@ -137,49 +136,51 @@ func (p *Player) pokerIsMine(pk poker.IPoker) bool {
 // 设置完立刻监听
 func (p *Player) SetRevc(recv chan message.Message) {
 	p.recv = recv
-
 	go func() {
 		for {
 			select {
 			case msg := <-p.recv:
 				switch msg.T {
-				// 聊天信息
 				case message.TypeChat:
 					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
 				case message.TypeNotice:
 					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
-				// 游戏中
 				case message.TypeRuler:
 					switch msg.ST {
-					// 已就坐
 					case message.SubTypeRulerSit:
 						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
-					// 已准备
 					case message.SubTypeRulerReady:
 						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
-					// 洗牌中
 					case message.SubTypeRulerShuffle:
 						fmt.Println(p.name + " recive: [洗牌中]")
-					// 发牌
 					case message.SubTypeRulerReal:
-						showpokers := ""
-						for _, v := range msg.Pokers {
-							showpokers += v.Show()
-						}
-						fmt.Println(p.name + " recive: [发牌:( " + showpokers + " )]")
+						fmt.Println(p.name + " recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
 						p.pokersLeft = msg.Pokers
-					// 出牌
 					case message.SubTypeRulerPlay:
-						showpokers := ""
-						for _, v := range msg.Pokers {
-							showpokers += v.Show()
+						if len(msg.Pokers) == 0 {
+							fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
+							continue
 						}
-						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showpokers + " )]")
+						newpkleft := p.pokersLeft
+						for _, pk := range msg.Pokers {
+							p.pokersPlayed = append(p.pokersPlayed, pk)
+							for i, pkk := range newpkleft {
+								if pkk.Type() == pk.Type() && pkk.Value() == pk.Value() {
+									newpkleft = append(newpkleft[0:i], newpkleft[i+1:]...)
+								}
+							}
+						}
+						p.pokersLeft = newpkleft
+						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
 					case message.SubTypeRulerChangePlayer:
 						fmt.Println(p.name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
+					case message.SubTypeRulerWinner:
+						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
 					case message.SubTypeRulerEnd:
 						fmt.Println(p.name + " recive: [本局游戏结束]")
-						// TODO 一些玩家本局数据恢复的设置
+						p.pokersLeft = []poker.IPoker{}
+						p.pokersPlayed = []poker.IPoker{}
+						p.status = Sit
 					}
 				}
 			}
@@ -214,10 +215,7 @@ func (p *Player) Prepare() error {
 	if p.status != Sit {
 		return errors.New("状态出错，不能准备开始")
 	}
-
-	// 玩家状态改为已准备
 	p.status = Prepare
-
 	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerReady,
