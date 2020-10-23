@@ -1,7 +1,7 @@
 package room
 
 import (
-	"ddz/table"
+	"ddz/game/table"
 )
 
 // Room Room

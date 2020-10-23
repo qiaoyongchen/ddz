@@ -1,7 +1,7 @@
 package ruler
 
 import (
-	"ddz/poker"
+	"ddz/game/poker"
 )
 
 // IRuler 规则
