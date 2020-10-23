@@ -12,7 +12,7 @@ const (
 	TypeNotice = 0  // 通知消息类型(比如断线了进行广播,牌出错了进行广播)
 	TypeChat   = 1  // 聊天消息类型(用于玩家聊天)
 	TypeRuler  = 2  // 游戏规则类型(用于游戏规则,比如:已就坐，准备，洗牌，发牌，出牌，结束)
-	TypeRoom   = 3  // 再房间里使用的类型
+	TypeRoom   = 3  // 在房间里使用的类型
 )
 
 type SubType = int8

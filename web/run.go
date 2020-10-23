@@ -33,7 +33,7 @@ func init() {
 // Run 运行
 func Run() {
 	go func() {
-		srv.Logger.Fatal(srv.Start(":1234"))
+		srv.Start(":1234")
 	}()
 }
 
@@ -67,13 +67,12 @@ func websocketRun(ctx echo.Context) error {
 	))
 
 	for {
-		msgType, msg, err := conn.ReadMessage()
+		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("read message: ", err)
 			ctx.JSON(http.StatusOK, "read message error")
 			break
 		}
-		log.Println(msgType)
 		log.Printf("recv: %s", msg)
 
 		_msg, _msgErr := message.Decode(msg)
@@ -91,7 +90,7 @@ func websocketRun(ctx echo.Context) error {
 		case message.TypeRuler:
 			switch _msg.ST {
 			case message.SubTypeRulerSit:
-
+				// TODO
 			default:
 				continue
 			}
