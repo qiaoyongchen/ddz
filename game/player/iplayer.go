@@ -31,8 +31,8 @@ type IPlayer interface {
 
 // Player 玩家
 type Player struct {
-	name         string               // 玩家姓名
-	i            int                  // 座位号
+	Name         string               // 玩家姓名
+	I            int                  // 座位号
 	pokersLeft   []poker.IPoker       // 剩余牌
 	pokersPlayed []poker.IPoker       // 出过的牌
 	status       Status               // 状态
@@ -46,7 +46,7 @@ func NewPlayer(name string) *Player {
 		pokersLeft:   []poker.IPoker{},
 		pokersPlayed: []poker.IPoker{},
 		status:       Sit,
-		name:         name,
+		Name:         name,
 	}
 }
 
@@ -80,7 +80,7 @@ func (p *Player) Status() Status {
 
 // Sit 坐在牌桌了
 func (p *Player) Sit(i int) {
-	p.i = i
+	p.I = i
 	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerSit,
@@ -102,7 +102,7 @@ func (p *Player) Play(pokers []poker.IPoker) error {
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerPlay,
 		Chat:          "",
-		PlayerCurrent: p.i,
+		PlayerCurrent: p.I,
 		Pokers:        pokers,
 	}
 	return nil
@@ -142,23 +142,23 @@ func (p *Player) SetRevc(recv chan message.Message) {
 			case msg := <-p.recv:
 				switch msg.T {
 				case message.TypeChat:
-					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
+					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
 				case message.TypeNotice:
-					fmt.Println(p.name + " recive: [" + msg.Chat + "]")
+					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
 				case message.TypeRuler:
 					switch msg.ST {
 					case message.SubTypeRulerSit:
-						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
+						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
 					case message.SubTypeRulerReady:
-						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
+						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
 					case message.SubTypeRulerShuffle:
-						fmt.Println(p.name + " recive: [洗牌中]")
+						fmt.Println(p.Name + " recive: [洗牌中]")
 					case message.SubTypeRulerReal:
-						fmt.Println(p.name + " recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
+						fmt.Println(p.Name + " recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
 						p.pokersLeft = msg.Pokers
 					case message.SubTypeRulerPlay:
 						if len(msg.Pokers) == 0 {
-							fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
+							fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
 							continue
 						}
 						newpkleft := p.pokersLeft
@@ -171,13 +171,13 @@ func (p *Player) SetRevc(recv chan message.Message) {
 							}
 						}
 						p.pokersLeft = newpkleft
-						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
+						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
 					case message.SubTypeRulerChangePlayer:
-						fmt.Println(p.name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
+						fmt.Println(p.Name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
 					case message.SubTypeRulerWinner:
-						fmt.Println(p.name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
+						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
 					case message.SubTypeRulerEnd:
-						fmt.Println(p.name + " recive: [本局游戏结束]")
+						fmt.Println(p.Name + " recive: [本局游戏结束]")
 						p.pokersLeft = []poker.IPoker{}
 						p.pokersPlayed = []poker.IPoker{}
 						p.status = Sit
@@ -193,9 +193,9 @@ func (p *Player) SetSend(send chan message.Message) {
 	p.send = send
 }
 
-// Name Name
-func (p *Player) Name() string {
-	return p.name
+// GetName GetName
+func (p *Player) GetName() string {
+	return p.Name
 }
 
 // Chat Chat
@@ -203,7 +203,7 @@ func (p *Player) Chat(content string) {
 	p.send <- message.Message{
 		T:             message.TypeChat,
 		ST:            0,
-		Chat:          p.name + " say: " + content,
+		Chat:          p.Name + " say: " + content,
 		PlayerCurrent: 0,
 		PlayerTurn:    0,
 		Pokers:        nil,
@@ -220,7 +220,7 @@ func (p *Player) Prepare() error {
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerReady,
 		Chat:          "",
-		PlayerCurrent: p.i,
+		PlayerCurrent: p.I,
 		Pokers:        nil,
 	}
 	return nil

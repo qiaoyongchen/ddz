@@ -12,6 +12,7 @@ const (
 	TypeNotice = 0  // 通知消息类型(比如断线了进行广播,牌出错了进行广播)
 	TypeChat   = 1  // 聊天消息类型(用于玩家聊天)
 	TypeRuler  = 2  // 游戏规则类型(用于游戏规则,比如:已就坐，准备，洗牌，发牌，出牌，结束)
+	TypeRoom   = 3  // 再房间里使用的类型
 )
 
 type SubType = int8
@@ -19,6 +20,7 @@ type SubType = int8
 const (
 	SubTypeNoticeBreak       Type    = 0 // 断线了
 	SubTypeNoticeRelink      Type    = 1 // 断线又重连了
+	SubTypeNoticeError       Type    = 2 // 报错消息
 	SubTypeRulerSit          SubType = 0 // 已就坐
 	SubTypeRulerReady        SubType = 1 // 用户已准备
 	SubTypeRulerShuffle      SubType = 2 // 正在洗牌
@@ -27,6 +29,7 @@ const (
 	SubTypeRulerEnd          SubType = 5 // 游戏结束
 	SubTypeRulerChangePlayer SubType = 6 // 改变出牌人
 	SubTypeRulerWinner       SubType = 7 // 获胜
+	SubTypeRoomInfo          SubType = 0 // 显示房间信息
 )
 
 // Message 消息

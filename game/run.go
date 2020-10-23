@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"strconv"
 
 	"ddz/game/room"
 	"ddz/game/table"
@@ -29,4 +30,13 @@ func Shutdown() {
 	fmt.Println("牌桌1清空...")
 	fmt.Println("牌桌2清空...")
 	fmt.Println("大厅关闭...")
+}
+
+// GetRommInfo 获取大厅信息
+func GetRommInfo() interface{} {
+	rst := make(map[string]interface{})
+	for k, tb := range room1.Tables() {
+		rst[strconv.Itoa(k)] = tb.Players()
+	}
+	return rst
 }

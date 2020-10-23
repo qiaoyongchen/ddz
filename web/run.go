@@ -2,6 +2,8 @@ package web
 
 import (
 	"context"
+	"ddz/game"
+	"ddz/message"
 	"log"
 	"net/http"
 	"time"
@@ -56,6 +58,14 @@ func websocketRun(ctx echo.Context) error {
 		return nil
 	}
 
+	conn.WriteMessage(websocket.TextMessage, message.Encode(
+		message.Message{
+			T:    message.TypeRoom,
+			ST:   message.SubTypeRoomInfo,
+			Data: game.GetRommInfo(),
+		},
+	))
+
 	for {
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -65,6 +75,29 @@ func websocketRun(ctx echo.Context) error {
 		}
 		log.Println(msgType)
 		log.Printf("recv: %s", msg)
+
+		_msg, _msgErr := message.Decode(msg)
+		if _msgErr != nil {
+			conn.WriteMessage(websocket.TextMessage, message.Encode(
+				message.Message{
+					T:    message.TypeNotice,
+					ST:   message.SubTypeNoticeError,
+					Chat: "解析消息失败: " + _msgErr.Error(),
+				},
+			))
+			continue
+		}
+		switch _msg.T {
+		case message.TypeRuler:
+			switch _msg.ST {
+			case message.SubTypeRulerSit:
+
+			default:
+				continue
+			}
+		default:
+			continue
+		}
 	}
 	return nil
 }
