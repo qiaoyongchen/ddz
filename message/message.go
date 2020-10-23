@@ -34,13 +34,15 @@ const (
 
 // Message 消息
 type Message struct {
-	T             Type           `json:"type"`           // type
-	ST            SubType        `json:"sub_type"`       // sub_type
-	Chat          string         `json:"chat"`           // chat 聊天内容
-	PlayerCurrent int            `json:"player_current"` // 当前用户
-	PlayerTurn    int            `json:"player_turn"`    // 轮到哪个用户出牌
-	Pokers        []poker.IPoker `json:"pokers"`         // 牌
-	Data          interface{}    `json:"data"`           // 携带的其他数据
+	T                  Type           `json:"type"`                 // type
+	ST                 SubType        `json:"sub_type"`             // sub_type
+	Chat               string         `json:"chat"`                 // chat 聊天内容
+	PlayerCurrent      int            `json:"player_current"`       // 当前用户
+	PlayerTurn         int            `json:"player_turn"`          // 轮到哪个用户出牌
+	Pokers             []poker.IPoker `json:"pokers"`               // 牌
+	TableIndex         int            `json:"table_index"`          // 第几桌
+	TablePositionIndex int            `json:"table_position_index"` // 这桌第几个位置
+	Data               interface{}    `json:"data"`                 // 携带的其他数据
 }
 
 // Decode 解码

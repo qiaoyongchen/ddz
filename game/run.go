@@ -40,3 +40,8 @@ func GetRoomInfo() interface{} {
 	}
 	return rst
 }
+
+// GetRoom 获取房间对象
+func GetRoom() *room.Room {
+	return room1
+}

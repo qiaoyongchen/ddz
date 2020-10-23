@@ -5,7 +5,10 @@ import (
 	"ddz/message"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 // Status 状态
@@ -26,7 +29,7 @@ type IPlayer interface {
 	Sit(int)                      // 坐在牌桌了
 	SetRevc(chan message.Message) // 设置接受管道
 	SetSend(chan message.Message) // 设置发送管道
-	Name() string                 // 玩家名字
+	GetName() string              // 玩家名字
 }
 
 // Player 玩家
@@ -38,15 +41,17 @@ type Player struct {
 	status       Status               // 状态
 	recv         chan message.Message // 接受频道
 	send         chan message.Message // 发送频道
+	conn         *websocket.Conn      // websocket 连接
 }
 
 // NewPlayer NewPlayer
-func NewPlayer(name string) *Player {
+func NewPlayer(name string, conn *websocket.Conn) *Player {
 	return &Player{
 		pokersLeft:   []poker.IPoker{},
 		pokersPlayed: []poker.IPoker{},
 		status:       Sit,
 		Name:         name,
+		conn:         conn,
 	}
 }
 
@@ -60,6 +65,7 @@ func (p *Player) ShowLeft() {
 	fmt.Println(showPokers(p.Left()))
 }
 
+// 显示扑克 (用于测试)
 func showPokers(pokers []poker.IPoker) string {
 	showpokers := ""
 	for _, v := range pokers {
@@ -81,6 +87,7 @@ func (p *Player) Status() Status {
 // Sit 坐在牌桌了
 func (p *Player) Sit(i int) {
 	p.I = i
+	p.startListening()
 	p.send <- message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerSit,
@@ -89,6 +96,34 @@ func (p *Player) Sit(i int) {
 		PlayerTurn:    0,
 		Pokers:        nil,
 	}
+}
+
+// 开始监听用来发来的消息
+func (p *Player) startListening() {
+	go func() {
+		for {
+			_, msg, err := p.conn.ReadMessage()
+			if err != nil {
+				log.Println("player read message: ", err)
+				p.conn.WriteMessage(websocket.TextMessage, []byte("player read message: "+err.Error()))
+				continue
+			}
+			log.Printf("player recv: %s", msg)
+
+			_msg, _msgErr := message.Decode(msg)
+			if _msgErr != nil {
+				p.conn.WriteMessage(websocket.TextMessage, message.Encode(
+					message.Message{
+						T:    message.TypeNotice,
+						ST:   message.SubTypeNoticeError,
+						Chat: "pleyer 解析消息失败: " + _msgErr.Error(),
+					},
+				))
+				continue
+			}
+			p.send <- _msg
+		}
+	}()
 }
 
 // Play 出牌
@@ -106,21 +141,6 @@ func (p *Player) Play(pokers []poker.IPoker) error {
 		Pokers:        pokers,
 	}
 	return nil
-}
-
-// PlayNone 不出
-func (p *Player) PlayNone() error {
-	return p.Play([]poker.IPoker{})
-}
-
-// PlayAll 全部出掉
-func (p *Player) PlayAll() error {
-	return p.Play(p.pokersLeft)
-}
-
-// PlayFirst 出第一张牌(测试)
-func (p *Player) PlayFirst() error {
-	return p.Play(p.pokersLeft[0:1])
 }
 
 func (p *Player) pokerIsMine(pk poker.IPoker) bool {
@@ -143,22 +163,29 @@ func (p *Player) SetRevc(recv chan message.Message) {
 				switch msg.T {
 				case message.TypeChat:
 					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
+					p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 				case message.TypeNotice:
 					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
+					p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 				case message.TypeRuler:
 					switch msg.ST {
 					case message.SubTypeRulerSit:
 						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerReady:
 						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerShuffle:
 						fmt.Println(p.Name + " recive: [洗牌中]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerReal:
 						fmt.Println(p.Name + " recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 						p.pokersLeft = msg.Pokers
 					case message.SubTypeRulerPlay:
 						if len(msg.Pokers) == 0 {
 							fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
+							p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 							continue
 						}
 						newpkleft := p.pokersLeft
@@ -172,15 +199,19 @@ func (p *Player) SetRevc(recv chan message.Message) {
 						}
 						p.pokersLeft = newpkleft
 						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerChangePlayer:
 						fmt.Println(p.Name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerWinner:
 						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerEnd:
 						fmt.Println(p.Name + " recive: [本局游戏结束]")
 						p.pokersLeft = []poker.IPoker{}
 						p.pokersPlayed = []poker.IPoker{}
 						p.status = Sit
+						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					}
 				}
 			}

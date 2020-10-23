@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"ddz/game"
+	"ddz/game/player"
 	"ddz/message"
 	"log"
 	"net/http"
@@ -57,7 +58,6 @@ func websocketRun(ctx echo.Context) error {
 		ctx.JSON(http.StatusOK, "upgrade error")
 		return nil
 	}
-
 	conn.WriteMessage(websocket.TextMessage, message.Encode(
 		message.Message{
 			T:    message.TypeRoom,
@@ -65,7 +65,6 @@ func websocketRun(ctx echo.Context) error {
 			Data: game.GetRoomInfo(),
 		},
 	))
-
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -90,7 +89,10 @@ func websocketRun(ctx echo.Context) error {
 		case message.TypeRuler:
 			switch _msg.ST {
 			case message.SubTypeRulerSit:
-				// TODO
+				p := player.NewPlayer("123", conn)
+				_room := game.GetRoom()
+				_room.Tables()[_msg.TableIndex].PlayerSit(_msg.TablePositionIndex, p)
+				break
 			default:
 				continue
 			}

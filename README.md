@@ -97,3 +97,23 @@
 	// web 服务开启
 	time.Sleep(time.Second * 1)
 ```
+
+
+-- 123
+
+```
+// PlayNone 不出
+func (p *Player) PlayNone() error {
+	return p.Play([]poker.IPoker{})
+}
+
+// PlayAll 全部出掉
+func (p *Player) PlayAll() error {
+	return p.Play(p.pokersLeft)
+}
+
+// PlayFirst 出第一张牌(测试)
+func (p *Player) PlayFirst() error {
+	return p.Play(p.pokersLeft[0:1])
+}
+```
