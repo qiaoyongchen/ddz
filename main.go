@@ -20,7 +20,6 @@ func run() {
 	web.Run()
 }
 
-// 退出收尾程序
 func shutdown() {
 	web.Shutdown()
 	game.Shutdown()

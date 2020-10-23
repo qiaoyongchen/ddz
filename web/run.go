@@ -62,7 +62,7 @@ func websocketRun(ctx echo.Context) error {
 		message.Message{
 			T:    message.TypeRoom,
 			ST:   message.SubTypeRoomInfo,
-			Data: game.GetRommInfo(),
+			Data: game.GetRoomInfo(),
 		},
 	))
 

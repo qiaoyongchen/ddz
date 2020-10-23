@@ -32,8 +32,8 @@ func Shutdown() {
 	fmt.Println("大厅关闭...")
 }
 
-// GetRommInfo 获取大厅信息
-func GetRommInfo() interface{} {
+// GetRoomInfo 获取大厅信息
+func GetRoomInfo() interface{} {
 	rst := make(map[string]interface{})
 	for k, tb := range room1.Tables() {
 		rst[strconv.Itoa(k)] = tb.Players()
