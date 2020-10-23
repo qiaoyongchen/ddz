@@ -9,7 +9,7 @@ func forPlayIsMyTurn(p processorFunc) processorFunc {
 			t.sendone(msg.PlayerCurrent, message.Message{
 				T:             message.TypeNotice,
 				ST:            0,
-				Chat:          "system: 现在没有轮到" + t.players[msg.PlayerCurrent].Name() + "出牌",
+				Chat:          "system: 现在没有轮到" + t.players[msg.PlayerCurrent].GetName() + "出牌",
 				PlayerCurrent: msg.PlayerCurrent,
 				PlayerTurn:    msg.PlayerCurrent,
 				Pokers:        msg.Pokers,
