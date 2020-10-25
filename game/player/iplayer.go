@@ -87,6 +87,7 @@ func (p *Player) Status() Status {
 // Sit 坐在牌桌了
 func (p *Player) Sit(i int) {
 	p.I = i
+	p.status = Sit
 	p.startListening()
 	p.send <- message.Message{
 		T:             message.TypeRuler,
@@ -119,6 +120,17 @@ func (p *Player) startListening() {
 						Chat: "pleyer 解析消息失败: " + _msgErr.Error(),
 					},
 				))
+				continue
+			}
+			switch _msg.T {
+			case message.TypeRuler:
+				switch _msg.ST {
+				case message.SubTypeRulerReady:
+					p.status = Prepare
+				default:
+					continue
+				}
+			default:
 				continue
 			}
 			p.send <- _msg
@@ -162,29 +174,29 @@ func (p *Player) SetRevc(recv chan message.Message) {
 			case msg := <-p.recv:
 				switch msg.T {
 				case message.TypeChat:
-					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
+					fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + msg.Chat + "]")
 					p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 				case message.TypeNotice:
-					fmt.Println(p.Name + " recive: [" + msg.Chat + "]")
+					fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + msg.Chat + "]")
 					p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 				case message.TypeRuler:
 					switch msg.ST {
 					case message.SubTypeRulerSit:
-						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已就坐]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerReady:
-						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家已准备]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerShuffle:
-						fmt.Println(p.Name + " recive: [洗牌中]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [洗牌中]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerReal:
-						fmt.Println(p.Name + " recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [发牌:( " + showPokers(msg.Pokers) + " )]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 						p.pokersLeft = msg.Pokers
 					case message.SubTypeRulerPlay:
 						if len(msg.Pokers) == 0 {
-							fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
+							fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家: 不要]")
 							p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 							continue
 						}
@@ -198,16 +210,16 @@ func (p *Player) SetRevc(recv chan message.Message) {
 							}
 						}
 						p.pokersLeft = newpkleft
-						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌:( " + showPokers(msg.Pokers) + " )]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerChangePlayer:
-						fmt.Println(p.Name + " recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [现在轮到" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家出牌]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerWinner:
-						fmt.Println(p.Name + " recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [" + strconv.Itoa(msg.PlayerCurrent) + "号位置玩家获胜]")
 						p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 					case message.SubTypeRulerEnd:
-						fmt.Println(p.Name + " recive: [本局游戏结束]")
+						fmt.Println(strconv.Itoa(p.I) + "号玩家 recive: [本局游戏结束]")
 						p.pokersLeft = []poker.IPoker{}
 						p.pokersPlayed = []poker.IPoker{}
 						p.status = Sit

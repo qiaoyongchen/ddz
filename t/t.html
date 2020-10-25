@@ -1,0 +1,19 @@
+<script>
+var ws0 = new WebSocket("ws://localhost:1234/connect");
+ws0.onopen = function() {
+    console.log("open");
+}
+ws0.onmessage = function(e) {
+　　console.log(e.data);
+}
+ws0.onclose = function(e) {
+　　console.log("close");
+}
+ws0.onerror = function(e) {
+　　console.log(e);
+}
+//进入房间
+//ws0.send('{"type":2,"sub_type":0,"chat":"","player_current":1,"player_turn":0,"pokers":null,"table_index":0,"table_position_index":1,"data":{"0":[null,null,null,null],"1":[null,null,null,null],"2":[null,null,null,null]}}');
+//坐到座位
+//ws0.send('{"type":2,"sub_type":1,"chat":"","player_current":1,"player_turn":0,"pokers":null,"table_index":0,"table_position_index":1}');
+</script>

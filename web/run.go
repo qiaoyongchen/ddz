@@ -5,6 +5,7 @@ import (
 	"ddz/game"
 	"ddz/game/player"
 	"ddz/message"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -85,6 +86,7 @@ func websocketRun(ctx echo.Context) error {
 			))
 			continue
 		}
+		sitted := false
 		switch _msg.T {
 		case message.TypeRuler:
 			switch _msg.ST {
@@ -92,12 +94,17 @@ func websocketRun(ctx echo.Context) error {
 				p := player.NewPlayer("123", conn)
 				_room := game.GetRoom()
 				_room.Tables()[_msg.TableIndex].PlayerSit(_msg.TablePositionIndex, p)
+				sitted = true
 				break
 			default:
 				continue
 			}
 		default:
 			continue
+		}
+		if sitted == true {
+			fmt.Println("切换至用户")
+			break
 		}
 	}
 	return nil

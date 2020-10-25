@@ -3,6 +3,7 @@ package message
 import (
 	"ddz/game/poker"
 	"encoding/json"
+	"fmt"
 )
 
 type Type = int8
@@ -49,6 +50,7 @@ type Message struct {
 func Decode(bts []byte) (Message, error) {
 	msg := Message{}
 	if err := json.Unmarshal(bts, &msg); err != nil {
+		fmt.Println(err.Error())
 		msg.T = TypeNone
 		return msg, nil
 	}

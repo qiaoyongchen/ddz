@@ -40,54 +40,54 @@ type IPoker interface {
 }
 
 type Poker struct {
-	t Type
-	v Value
+	T Type  `json:"type"`
+	V Value `json:"value"`
 }
 
 func NewPoker(t Type, v Value) Poker {
 	return Poker{
-		t: t,
-		v: v,
+		T: t,
+		V: v,
 	}
 }
 
 func (p Poker) Type() Type {
-	return p.t
+	return p.T
 }
 
 func (p Poker) Value() Value {
-	return p.v
+	return p.V
 }
 
 func (p Poker) Show() string {
 	showstring := ""
-	if p.t == TypeSpade {
+	if p.T == TypeSpade {
 		showstring += "[♠"
-	} else if p.t == TypeHeart {
+	} else if p.T == TypeHeart {
 		showstring += "[♥"
-	} else if p.t == TypeClub {
+	} else if p.T == TypeClub {
 		showstring += "[♣"
-	} else if p.t == TypeDiamond {
+	} else if p.T == TypeDiamond {
 		showstring += "[♦"
-	} else if p.t == TypeLittleJoker {
+	} else if p.T == TypeLittleJoker {
 		showstring += "[Little🃏]"
 		return showstring
-	} else if p.t == TypeBigJoker {
+	} else if p.T == TypeBigJoker {
 		showstring += "[Big🃏]"
 		return showstring
 	}
 
-	if p.v >= 3 && p.v <= 10 {
-		return showstring + "-" + strconv.Itoa(p.v) + "]"
-	} else if p.v == 11 {
+	if p.V >= 3 && p.V <= 10 {
+		return showstring + "-" + strconv.Itoa(p.V) + "]"
+	} else if p.V == 11 {
 		return showstring + "-J" + "]"
-	} else if p.v == 12 {
+	} else if p.V == 12 {
 		return showstring + "-Q" + "]"
-	} else if p.v == 13 {
+	} else if p.V == 13 {
 		return showstring + "-K" + "]"
-	} else if p.v == 14 {
+	} else if p.V == 14 {
 		return showstring + "-A" + "]"
-	} else if p.v == 15 {
+	} else if p.V == 15 {
 		return showstring + "-2" + "]"
 	}
 	return "[unknown]"

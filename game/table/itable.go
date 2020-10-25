@@ -5,6 +5,7 @@ import (
 	"ddz/game/poker"
 	"ddz/game/table/ruler"
 	"ddz/message"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -153,6 +154,15 @@ func (p *Table) allReady() bool {
 // 准备好开始打牌啦
 // 洗牌 -> 发牌 ->  指定第一个出牌玩家
 func (p *Table) ready() {
+	if p.allReady() {
+		fmt.Println("`````````````````````````")
+		fmt.Println("已全部准备好")
+		fmt.Println("`````````````````````````")
+	} else {
+		fmt.Println("`````````````````````````")
+		fmt.Println("未全部准备好")
+		fmt.Println("`````````````````````````")
+	}
 	if p.allReady() {
 		p.shuffle()
 		time.Sleep(time.Second)
