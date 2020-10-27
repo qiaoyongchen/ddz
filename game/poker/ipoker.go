@@ -2,7 +2,7 @@ package poker
 
 import "strconv"
 
-type Type = uint
+type Type = int
 
 const (
 	TypeLittleJoker = 10000 // 小王
