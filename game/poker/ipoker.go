@@ -37,6 +37,7 @@ type IPoker interface {
 	Type() Type
 	Value() Value
 	Show() string
+	CompareTo(IPoker) int
 }
 
 type Poker struct {
@@ -57,6 +58,21 @@ func (p Poker) Type() Type {
 
 func (p Poker) Value() Value {
 	return p.V
+}
+
+func (p Poker) CompareTo(p2 IPoker) int {
+	if p.Value() > p2.Value() {
+		return 1
+	} else if p.Value() < p2.Value() {
+		return -1
+	}
+	if p.Type() > p2.Type() {
+		return 1
+	}
+	if p.Type() < p2.Type() {
+		return -1
+	}
+	return 0
 }
 
 func (p Poker) Show() string {

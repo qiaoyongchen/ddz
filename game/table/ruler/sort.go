@@ -41,16 +41,5 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 
 // 1 p1 > p2 , 0 p1 == p2, -1, p1 < p2
 func compare(p1 poker.IPoker, p2 poker.IPoker) int {
-	if p1.Value() > p2.Value() {
-		return 1
-	} else if p1.Value() < p2.Value() {
-		return -1
-	}
-	if p1.Type() > p2.Type() {
-		return 1
-	}
-	if p1.Type() < p2.Type() {
-		return -1
-	}
-	return 0
+	return p1.CompareTo(p2)
 }
