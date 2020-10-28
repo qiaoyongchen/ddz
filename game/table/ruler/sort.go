@@ -15,7 +15,7 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 	trunLeft := false
 	for l < r {
 		if trunLeft {
-			if compare(pokers[l], flagPoker) == 0 || compare(pokers[l], flagPoker) == 1 {
+			if pokers[l].CompareTo(flagPoker) == 0 || pokers[l].CompareTo(flagPoker) == 1 {
 				pokers[r] = pokers[l]
 				r--
 				trunLeft = false
@@ -24,7 +24,7 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 				continue
 			}
 		} else {
-			if compare(pokers[r], flagPoker) == -1 {
+			if pokers[2].CompareTo(flagPoker) == -1 {
 				pokers[l] = pokers[r]
 				l++
 				trunLeft = true
@@ -37,9 +37,4 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 	pokers[l] = flagPoker
 	SortPokers(pokers, ll, l)
 	SortPokers(pokers, l+1, rr)
-}
-
-// 1 p1 > p2 , 0 p1 == p2, -1, p1 < p2
-func compare(p1 poker.IPoker, p2 poker.IPoker) int {
-	return p1.CompareTo(p2)
 }

@@ -26,4 +26,5 @@ type PokerType interface {
 	Type() int
 	Value() int
 	Pokers() []poker.IPoker
+	IsBoom() bool
 }

@@ -7,11 +7,16 @@ type JokerBoom struct {
 	pokers []poker.IPoker
 }
 
+// IsJokerBoom IsJokerBoom
+func IsJokerBoom(pokers []poker.IPoker) bool {
+	if len(pokers) != 2 {
+		return false
+	}
+	return pokers[0].Value() == poker.VLittleJoker && pokers[1].Value() == poker.VBigJoker
+}
+
 // NewJokerBoom NewJokerBoom
 func NewJokerBoom(pokers []poker.IPoker) JokerBoom {
-	if pokers[0].Value() > pokers[1].Value() {
-		pokers[0], pokers[1] = pokers[1], pokers[0]
-	}
 	return JokerBoom{
 		pokers: pokers,
 	}
@@ -19,7 +24,7 @@ func NewJokerBoom(pokers []poker.IPoker) JokerBoom {
 
 // Type Type
 func (p JokerBoom) Type() int {
-	return 1000
+	return TypeJokerBoom
 }
 
 // Value Value
@@ -34,4 +39,9 @@ func (p JokerBoom) Value() int {
 // Pokers Pokers
 func (p JokerBoom) Pokers() []poker.IPoker {
 	return p.pokers
+}
+
+// IsBoom IsBoom
+func (p JokerBoom) IsBoom() bool {
+	return true
 }
