@@ -1,11 +1,12 @@
-package pokertype
+package ruler
 
 import (
 	"ddz/game/poker"
 )
 
-func sortPokers(pokers []poker.IPoker, l int, r int) []poker.IPoker {
-	return nil
+// SortPokers SortPokers
+func SortPokers(pokers []poker.IPoker, l int, r int) {
+
 }
 
 func compare(p1 poker.IPoker, p2 poker.IPoker) int {
