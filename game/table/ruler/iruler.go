@@ -9,6 +9,7 @@ import (
 // IRuler 规则
 type IRuler interface {
 	Check([]poker.IPoker, []poker.IPoker) (int, error)
+	Shuffle([]poker.IPoker)
 }
 
 // Ruler 规则
@@ -75,6 +76,11 @@ func (p Ruler) Check(p1 []poker.IPoker, p2 []poker.IPoker) (int, error) {
 		}
 	}
 	return 0, errors.New("牌型比对错误")
+}
+
+// Shuffle 洗牌
+func (p Ruler) Shuffle(pokers []poker.IPoker) {
+	poker.Shuffle(pokers)
 }
 
 // NewRuler NewRuler

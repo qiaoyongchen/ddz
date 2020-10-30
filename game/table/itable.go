@@ -3,14 +3,15 @@ package table
 import (
 	"ddz/game/player"
 	"ddz/game/poker"
+	"ddz/game/proc1"
 	"ddz/game/table/ruler"
 	"ddz/message"
 
 	"errors"
-	"math/rand"
 	"time"
 )
 
+// Status 状态
 type Status = int
 
 const (
@@ -37,19 +38,19 @@ type ITable interface {
 
 // Table 桌子
 type Table struct {
-	i               int                        // 桌号
-	status          Status                     // 状态
-	subStatus       StatusPlaying              // playing子状态
-	players         []player.IPlayer           // 玩家
-	pokers          []poker.IPoker             // 牌桌上的牌
-	ruler           ruler.IRuler               // 规则检查器
-	recvChannel     chan message.Message       // 接受频道
-	sendChannels    []chan message.Message     // 发送频道
-	full            int                        // 牌桌满用户数
-	maxPokers       []poker.IPoker             // 当前最大牌
-	playerMaxPokers int                        // 当前最大牌的出牌玩家
-	playerCurrent   int                        // 当前出牌人
-	processors      map[message.Type]processor // 消息处理器
+	i               int                              // 桌号
+	status          Status                           // 状态
+	subStatus       StatusPlaying                    // playing子状态
+	players         []player.IPlayer                 // 玩家
+	pokers          []poker.IPoker                   // 牌桌上的牌
+	ruler           ruler.IRuler                     // 规则检查器
+	recvChannel     chan message.Message             // 接受频道
+	sendChannels    []chan message.Message           // 发送频道
+	full            int                              // 牌桌满用户数
+	maxPokers       []poker.IPoker                   // 当前最大牌
+	playerMaxPokers int                              // 当前最大牌的出牌玩家
+	playerCurrent   int                              // 当前出牌人
+	processors      map[message.Type]proc1.Processor // 消息处理器
 }
 
 // NewTable 新建一个牌桌
@@ -69,13 +70,24 @@ func NewTable(i int) *Table {
 			make(chan message.Message, 10),
 			make(chan message.Message, 10),
 		},
-		processors: make(map[message.Type]processor),
+		processors: make(map[message.Type]proc1.Processor),
 	}
 
-	setter, _ := t.getAndSetProcessor()
-	setter(message.TypeChat, chatProcessor)
-	setter(message.TypeRuler, forPlayIsMyTurn(rulerProcessor))
+	setter, _ := t.getSetProcessor()
+	setter(message.TypeChat, proc4Chat(t))
+	setter(message.TypeRuler, mw4PlayIsMyTurn(t)(proc4Ruler(t)))
 	return t
+}
+
+// DaemonRun 后台定时执行
+func (p *Table) DaemonRun() {
+	_, getter := p.getSetProcessor()
+	go func() {
+		for {
+			msg := <-p.recvChannel
+			getter(msg.T).Process(msg)
+		}
+	}()
 }
 
 // Players 列出所有玩家
@@ -83,11 +95,14 @@ func (p *Table) Players() []player.IPlayer {
 	return p.players
 }
 
-func (p *Table) getAndSetProcessor() (
-	setter func(message.Type, processorFunc), getter func(message.Type) processor) {
-	return func(t message.Type, f processorFunc) {
+// 设置或者获取处理器
+func (p *Table) getSetProcessor() (
+	func(message.Type, proc1.Processor), func(message.Type) proc1.Processor) {
+
+	return func(t message.Type, f proc1.Processor) {
 			p.processors[t] = f
-		}, func(t message.Type) processor {
+		},
+		func(t message.Type) proc1.Processor {
 			return p.processors[t]
 		}
 }
@@ -106,20 +121,10 @@ func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 
 // 洗牌
 func (p *Table) shuffle() {
-	max := len(p.pokers) - 1
-	for i := 0; i <= 1000; i++ {
-		rand.Seed(time.Now().UnixNano())
-		fst := rand.Intn(max + 1)
-		rand.Seed(time.Now().UnixNano() + int64(fst))
-		snd := rand.Intn(max + 1)
-		p.pokers[fst], p.pokers[snd] = p.pokers[snd], p.pokers[fst]
-	}
+	p.ruler.Shuffle(p.pokers)
 	p.broadcast(message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerShuffle,
-		Chat:          "",
-		PlayerCurrent: 0,
-		Pokers:        nil,
+		T:  message.TypeRuler,
+		ST: message.SubTypeRulerShuffle,
 	})
 }
 
@@ -129,7 +134,6 @@ func (p *Table) real() {
 		p.sendChannels[i] <- message.Message{
 			T:             message.TypeRuler,
 			ST:            message.SubTypeRulerReal,
-			Chat:          "",
 			PlayerCurrent: i,
 			Pokers:        p.pokers[0:13],
 		}
@@ -161,26 +165,13 @@ func (p *Table) ready() {
 	}
 }
 
-// DaemonRun 后台定时执行
-func (p *Table) DaemonRun() {
-	_, getter := p.getAndSetProcessor()
-	go func() {
-		for {
-			msg := <-p.recvChannel
-			getter(msg.T).process(p, msg)
-		}
-	}()
-}
-
 // NextPlayer 切换到下一个用户
 func (p *Table) nextPlayer(current int) {
 	nextplayer := p._nextPlayer(current)
 	p.broadcast(message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerChangePlayer,
-		Chat:          "",
 		PlayerCurrent: nextplayer,
-		Pokers:        nil,
 	})
 	p.playerCurrent = nextplayer
 }
@@ -207,19 +198,17 @@ func (p *Table) end(winner int) {
 	p.broadcast(message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerWinner,
-		Chat:          "",
 		PlayerCurrent: winner,
-		PlayerTurn:    0,
-		Pokers:        nil,
 	})
 	p.broadcast(message.Message{
 		T:             message.TypeRuler,
 		ST:            message.SubTypeRulerEnd,
-		Chat:          "",
 		PlayerCurrent: -1,
-		Pokers:        nil,
 	})
-	// 重新待玩家准备
+	p.restart()
+}
+
+func (p *Table) restart() {
 	p.status = Prepare
 	p.playerCurrent = -1
 	p.pokers = poker.OnePack()
