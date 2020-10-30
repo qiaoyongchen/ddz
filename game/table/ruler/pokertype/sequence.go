@@ -72,3 +72,8 @@ func (p Sequence) Pokers() []poker.IPoker {
 func (p Sequence) IsBoom() bool {
 	return false
 }
+
+// Length Length
+func (p Sequence) Length() int {
+	return len(p.pokers)
+}

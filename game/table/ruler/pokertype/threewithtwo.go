@@ -60,3 +60,8 @@ func (p ThreeWithTwo) Pokers() []poker.IPoker {
 func (p ThreeWithTwo) IsBoom() bool {
 	return false
 }
+
+// Length Length
+func (p ThreeWithTwo) Length() int {
+	return 5
+}

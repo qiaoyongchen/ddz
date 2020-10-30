@@ -7,9 +7,6 @@ import (
 // Type 牌型的值
 type Type = int
 
-// TypeWeight 类型位权
-const TypeWeight = 10
-
 const (
 	TypeJokerBoom    = 1000 // 王炸
 	TypeFlushBoom    = 100  // 同花顺
@@ -27,4 +24,5 @@ type PokerType interface {
 	Value() int
 	Pokers() []poker.IPoker
 	IsBoom() bool
+	Length() int
 }

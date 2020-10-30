@@ -45,3 +45,8 @@ func (p JokerBoom) Pokers() []poker.IPoker {
 func (p JokerBoom) IsBoom() bool {
 	return true
 }
+
+// Length Length
+func (p JokerBoom) Length() int {
+	return len(p.pokers)
+}

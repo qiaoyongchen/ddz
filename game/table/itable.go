@@ -5,10 +5,10 @@ import (
 	"ddz/game/poker"
 	"ddz/game/table/ruler"
 	"ddz/message"
-	"math/rand"
-	"time"
 
 	"errors"
+	"math/rand"
+	"time"
 )
 
 type Status = int
