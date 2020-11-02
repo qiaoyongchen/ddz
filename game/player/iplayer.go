@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"ddz/game/message"
 	"ddz/game/poker"
-	"ddz/message"
 )
 
 // Status 状态
@@ -35,7 +35,6 @@ type IPlayer interface {
 	Status() Status               // 状态
 	Sit(int) error                // 坐在牌桌了
 	Ready() error                 // 准备
-	Play([]poker.IPoker) error    // 出牌
 	Restart()                     // 重新开始
 	SetRevc(chan message.Message) // 设置接受管道
 	SetSend(chan message.Message) // 设置发送管道

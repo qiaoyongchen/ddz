@@ -1,9 +1,9 @@
 package table
 
 import (
+	"ddz/game/message"
 	"ddz/game/poker"
 	"ddz/game/proc1"
-	"ddz/message"
 )
 
 // 聊天

@@ -1,8 +1,8 @@
 package table
 
 import (
+	"ddz/game/message"
 	"ddz/game/proc1"
-	"ddz/message"
 )
 
 // 出牌时检查是否轮到该用户出牌

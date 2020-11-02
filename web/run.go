@@ -3,8 +3,8 @@ package web
 import (
 	"context"
 	"ddz/game"
+	"ddz/game/message"
 	"ddz/game/player"
-	"ddz/message"
 	"fmt"
 	"log"
 	"net/http"

@@ -1,11 +1,11 @@
 package table
 
 import (
+	"ddz/game/message"
 	"ddz/game/player"
 	"ddz/game/poker"
 	"ddz/game/proc1"
 	"ddz/game/table/ruler"
-	"ddz/message"
 
 	"errors"
 	"time"

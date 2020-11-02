@@ -1,7 +1,7 @@
 package proc1
 
 import (
-	"ddz/message"
+	"ddz/game/message"
 )
 
 // Processor 处理
