@@ -15,19 +15,26 @@ import (
 type Status = int
 
 const (
-	Prepare Status = 0 // 准备中
-	Playing Status = 1 // 玩游戏中
-	End     Status = 2 // 结束
+	// Prepare 准备中
+	Prepare Status = 0
+	// Playing 玩游戏中
+	Playing Status = 1
+	// End 结束
+	End Status = 2
 )
 
 // StatusPlaying 玩牌中的子状态
 type StatusPlaying = int
 
 const (
-	PlayingAllReady StatusPlaying = 0 // 全部已准备
-	PlayingShuffled StatusPlaying = 1 // 已洗牌
-	PlayingRealed   StatusPlaying = 2 // 已发牌
-	PlayingPlaying  StatusPlaying = 3 // 出牌中
+	// PlayingAllReady 全部已准备
+	PlayingAllReady StatusPlaying = 0
+	// PlayingShuffled 已洗牌
+	PlayingShuffled StatusPlaying = 1
+	// PlayingRealed 已发牌
+	PlayingRealed StatusPlaying = 2
+	// PlayingPlaying 出牌中
+	PlayingPlaying StatusPlaying = 3
 )
 
 // ITable 牌桌
@@ -65,10 +72,10 @@ func NewTable(i int) *Table {
 		recvChannel:   make(chan message.Message, 1000),
 		playerCurrent: -1,
 		sendChannels: []chan message.Message{
-			make(chan message.Message, 10),
-			make(chan message.Message, 10),
-			make(chan message.Message, 10),
-			make(chan message.Message, 10),
+			make(chan message.Message, 100),
+			make(chan message.Message, 100),
+			make(chan message.Message, 100),
+			make(chan message.Message, 100),
 		},
 		processors: make(map[message.Type]proc1.Processor),
 	}
@@ -76,6 +83,7 @@ func NewTable(i int) *Table {
 	setter, _ := t.getSetProcessor()
 	setter(message.TypeChat, proc4Chat(t))
 	setter(message.TypeRuler, mw4PlayIsMyTurn(t)(proc4Ruler(t)))
+
 	return t
 }
 
@@ -99,12 +107,14 @@ func (p *Table) Players() []player.IPlayer {
 func (p *Table) getSetProcessor() (
 	func(message.Type, proc1.Processor), func(message.Type) proc1.Processor) {
 
-	return func(t message.Type, f proc1.Processor) {
-			p.processors[t] = f
-		},
-		func(t message.Type) proc1.Processor {
-			return p.processors[t]
-		}
+	var setter = func(t message.Type, f proc1.Processor) {
+		p.processors[t] = f
+	}
+
+	var getter = func(t message.Type) proc1.Processor {
+		return p.processors[t]
+	}
+	return setter, getter
 }
 
 // PlayerSit 玩家指定一个位置坐下
@@ -122,21 +132,14 @@ func (p *Table) PlayerSit(position int, player player.IPlayer) error {
 // 洗牌
 func (p *Table) shuffle() {
 	p.ruler.Shuffle(p.pokers)
-	p.broadcast(message.Message{
-		T:  message.TypeRuler,
-		ST: message.SubTypeRulerShuffle,
-	})
+	p.broadcast(message.GenMessageShuffle())
 }
 
 // 发牌
 func (p *Table) real() {
 	for i := 0; i < p.full; i++ {
-		p.sendChannels[i] <- message.Message{
-			T:             message.TypeRuler,
-			ST:            message.SubTypeRulerReal,
-			PlayerCurrent: i,
-			Pokers:        p.pokers[0:13],
-		}
+		p.sendone(i, message.GenMessageReal(i, p.pokers[0:13]))
+		p.Players()[i].SetLeft(p.pokers[0:13])
 		p.pokers = p.pokers[13:]
 	}
 }
@@ -144,10 +147,7 @@ func (p *Table) real() {
 // 全都准备好了吗?
 func (p *Table) allReady() bool {
 	for _, v := range p.players {
-		if v == nil {
-			return false
-		}
-		if v.Status() != player.Prepare {
+		if v == nil || v.Status() != player.Ready {
 			return false
 		}
 	}
@@ -155,7 +155,6 @@ func (p *Table) allReady() bool {
 }
 
 // 准备好开始打牌啦
-// 洗牌 -> 发牌 ->  指定第一个出牌玩家
 func (p *Table) ready() {
 	if p.allReady() {
 		p.shuffle()
@@ -165,51 +164,36 @@ func (p *Table) ready() {
 	}
 }
 
-// NextPlayer 切换到下一个用户
+//切换到下一个用户
 func (p *Table) nextPlayer(current int) {
-	nextplayer := p._nextPlayer(current)
-	p.broadcast(message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerChangePlayer,
-		PlayerCurrent: nextplayer,
-	})
-	p.playerCurrent = nextplayer
+	var _nextPlayer = func(current int) int {
+		return (current + 1) % len(p.players)
+	}(current)
+	p.playerCurrent = _nextPlayer
+	p.broadcast(message.GenMessageChangePlayer(_nextPlayer))
 }
 
-// 获取下一个用户
-func (p *Table) _nextPlayer(current int) int {
-	return (current + 1) % len(p.players)
-}
-
-// 广播信息
 func (p *Table) broadcast(msg message.Message) {
 	for k := range p.sendChannels {
-		p.sendChannels[k] <- msg
+		p.sendone(k, msg)
 	}
 }
 
-// 发送给单个人
-func (p *Table) sendone(i int, msg message.Message) {
-	p.sendChannels[i] <- msg
+func (p *Table) sendone(playerIndex int, msg message.Message) {
+	msg.Send(p.sendChannels[playerIndex])
 }
 
-// 广播游戏结束通知
 func (p *Table) end(winner int) {
-	p.broadcast(message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerWinner,
-		PlayerCurrent: winner,
-	})
-	p.broadcast(message.Message{
-		T:             message.TypeRuler,
-		ST:            message.SubTypeRulerEnd,
-		PlayerCurrent: -1,
-	})
-	p.restart()
-}
+	var restart = func() {
+		p.status = Prepare
+		p.playerCurrent = -1
+		p.pokers = poker.OnePack()
 
-func (p *Table) restart() {
-	p.status = Prepare
-	p.playerCurrent = -1
-	p.pokers = poker.OnePack()
+		for i := 0; i < p.full; i++ {
+			p.Players()[i].Restart()
+		}
+	}
+	p.broadcast(message.GenMessageWinner(winner))
+	p.broadcast(message.GenMessageEnd())
+	restart()
 }

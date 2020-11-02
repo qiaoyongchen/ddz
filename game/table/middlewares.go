@@ -10,14 +10,8 @@ func mw4PlayIsMyTurn(t *Table) proc1.ProcessorMiddleware {
 	return func(p proc1.Processor) proc1.Processor {
 		return proc1.ProcessorFunc(func(msg message.Message) {
 			if message.SubTypeRulerPlay == msg.ST && t.playerCurrent != msg.PlayerCurrent {
-				t.sendone(msg.PlayerCurrent, message.Message{
-					T:             message.TypeNotice,
-					ST:            0,
-					Chat:          "system: 现在没有轮到" + t.players[msg.PlayerCurrent].GetName() + "出牌",
-					PlayerCurrent: msg.PlayerCurrent,
-					PlayerTurn:    msg.PlayerCurrent,
-					Pokers:        msg.Pokers,
-				})
+				t.sendone(msg.PlayerCurrent,
+					message.GenMessageNoticeError("system: 现在没有轮到"+t.players[msg.PlayerCurrent].GetName()+"出牌"))
 				return
 			}
 			p.Process(msg)
@@ -36,7 +30,6 @@ func mw4PlayBigThanLast(t *Table) proc1.ProcessorMiddleware {
 				t.broadcast(msg)
 				return
 			}
-			// TODO
 			p.Process(msg)
 		})
 	}

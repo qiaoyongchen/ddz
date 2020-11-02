@@ -2,35 +2,53 @@ package message
 
 import (
 	"ddz/game/poker"
-	"encoding/json"
-	"fmt"
+	"strconv"
 )
 
+// Type 消息类型
 type Type = int8
 
 const (
-	TypeNone   = -1 // 错误的消息
-	TypeNotice = 0  // 通知消息类型(比如断线了进行广播,牌出错了进行广播)
-	TypeChat   = 1  // 聊天消息类型(用于玩家聊天)
-	TypeRuler  = 2  // 游戏规则类型(用于游戏规则,比如:已就坐，准备，洗牌，发牌，出牌，结束)
-	TypeRoom   = 3  // 在房间里使用的类型
+	// TypeNone 错误的消息
+	TypeNone = -1
+	// TypeNotice 通知消息类型(比如断线了进行广播,牌出错了进行广播)
+	TypeNotice = 0
+	// TypeChat 聊天消息类型(用于玩家聊天)
+	TypeChat = 1
+	// TypeRuler 游戏规则类型(用于游戏规则,比如:已就坐，准备，洗牌，发牌，出牌，结束)
+	TypeRuler = 2
+	// TypeRoom 在房间里使用的类型
+	TypeRoom = 3
 )
 
+// SubType 消息子类型
 type SubType = int8
 
 const (
-	SubTypeNoticeBreak       Type    = 0 // 断线了
-	SubTypeNoticeRelink      Type    = 1 // 断线又重连了
-	SubTypeNoticeError       Type    = 2 // 报错消息
-	SubTypeRulerSit          SubType = 0 // 已就坐
-	SubTypeRulerReady        SubType = 1 // 用户已准备
-	SubTypeRulerShuffle      SubType = 2 // 正在洗牌
-	SubTypeRulerReal         SubType = 3 // 正在发牌
-	SubTypeRulerPlay         SubType = 4 // 出牌
-	SubTypeRulerEnd          SubType = 5 // 游戏结束
-	SubTypeRulerChangePlayer SubType = 6 // 改变出牌人
-	SubTypeRulerWinner       SubType = 7 // 获胜
-	SubTypeRoomInfo          SubType = 0 // 显示房间信息
+	// SubTypeNoticeBreak 断线了
+	SubTypeNoticeBreak Type = 0
+	// SubTypeNoticeRelink 断线又重连了
+	SubTypeNoticeRelink Type = 1
+	// SubTypeNoticeError 报错消息
+	SubTypeNoticeError Type = 2 // 报错消息
+	// SubTypeRulerSit 已就坐
+	SubTypeRulerSit SubType = 0
+	// SubTypeRulerReady 用户已准备
+	SubTypeRulerReady SubType = 1
+	// SubTypeRulerShuffle 正在洗牌
+	SubTypeRulerShuffle SubType = 2
+	// SubTypeRulerReal 正在发牌
+	SubTypeRulerReal SubType = 3
+	// SubTypeRulerPlay 出牌
+	SubTypeRulerPlay SubType = 4
+	// SubTypeRulerEnd 游戏结束
+	SubTypeRulerEnd SubType = 5
+	// SubTypeRulerChangePlayer 改变出牌人
+	SubTypeRulerChangePlayer SubType = 6
+	// SubTypeRulerWinner 获胜
+	SubTypeRulerWinner SubType = 7
+	// SubTypeRoomInfo 显示房间信息
+	SubTypeRoomInfo SubType = 0
 )
 
 // Message 消息
@@ -46,19 +64,112 @@ type Message struct {
 	Data               interface{}    `json:"data"`                 // 携带的其他数据
 }
 
-// Decode 解码
-func Decode(bts []byte) (Message, error) {
-	msg := Message{}
-	if err := json.Unmarshal(bts, &msg); err != nil {
-		fmt.Println(err.Error())
-		msg.T = TypeNone
-		return msg, nil
-	}
-	return msg, nil
+// Send 发送消息
+func (p Message) Send(ch chan<- Message) {
+	ch <- p
 }
 
-// Encode 编码
-func Encode(msg Message) []byte {
-	bts, _ := json.Marshal(msg)
-	return bts
+// String 消息转换为字符形式(用于测试)
+func (p Message) String() string {
+	switch p.T {
+	case TypeChat:
+		return p.Chat
+	case TypeNotice:
+		return p.Chat
+	case TypeRuler:
+		switch p.ST {
+		case SubTypeRulerSit:
+			return strconv.Itoa(p.PlayerCurrent) + "号位置玩家已就坐"
+		case SubTypeRulerReady:
+			return strconv.Itoa(p.PlayerCurrent) + "号位置玩家已准备]"
+		case SubTypeRulerShuffle:
+			return "洗牌中"
+		case SubTypeRulerReal:
+			return "发牌:( " + poker.ShowPokers(p.Pokers) + " )"
+		case SubTypeRulerPlay:
+			if len(p.Pokers) == 0 {
+				return "不要"
+			}
+			return strconv.Itoa(p.PlayerCurrent) + "号位置玩家出牌:( " + poker.ShowPokers(p.Pokers) + " )"
+		case SubTypeRulerChangePlayer:
+			return "现在轮到" + strconv.Itoa(p.PlayerCurrent) + "号位置玩家出牌"
+		case SubTypeRulerWinner:
+			return strconv.Itoa(p.PlayerCurrent) + "号位置玩家获胜"
+		case SubTypeRulerEnd:
+			return "本局游戏结束"
+		}
+	}
+	return "unknow message"
+}
+
+// GenMessageWinner 获胜消息
+func GenMessageWinner(winnerIndex int) Message {
+	return Message{
+		T:             TypeRuler,
+		ST:            SubTypeRulerWinner,
+		PlayerCurrent: winnerIndex,
+	}
+}
+
+// GenMessageEnd 一局结束消息
+func GenMessageEnd() Message {
+	return Message{
+		T:             TypeRuler,
+		ST:            SubTypeRulerEnd,
+		PlayerCurrent: -1,
+	}
+}
+
+// GenMessageChangePlayer 更换出派人消息
+func GenMessageChangePlayer(nextPlayerIndex int) Message {
+	return Message{
+		T:             TypeRuler,
+		ST:            SubTypeRulerChangePlayer,
+		PlayerCurrent: nextPlayerIndex,
+	}
+}
+
+// GenMessageReal 发牌消息
+func GenMessageReal(playerIndex int, pokers []poker.IPoker) Message {
+	return Message{
+		T:             TypeRuler,
+		ST:            SubTypeRulerReal,
+		PlayerCurrent: playerIndex,
+		Pokers:        pokers,
+	}
+}
+
+// GenMessageShuffle 洗牌信息
+func GenMessageShuffle() Message {
+	return Message{
+		T:  TypeRuler,
+		ST: SubTypeRulerShuffle,
+	}
+}
+
+// GenMessageNoticeError 通知消息
+func GenMessageNoticeError(content string) Message {
+	return Message{
+		T:    TypeNotice,
+		ST:   SubTypeNoticeError,
+		Chat: content,
+	}
+}
+
+// GenMessageRulerSit 玩家就坐消息
+func GenMessageRulerSit(playerIndex int) Message {
+	return Message{
+		T:             TypeRuler,
+		ST:            SubTypeRulerSit,
+		PlayerCurrent: playerIndex,
+	}
+}
+
+// GenMessageChat 聊天xiaoxi
+func GenMessageChat(playerIndex int, content string) Message {
+	return Message{
+		T:             TypeChat,
+		Chat:          content,
+		PlayerCurrent: playerIndex,
+	}
 }

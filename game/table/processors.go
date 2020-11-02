@@ -1,6 +1,7 @@
 package table
 
 import (
+	"ddz/game/poker"
 	"ddz/game/proc1"
 	"ddz/message"
 )
@@ -19,17 +20,28 @@ func proc4Ruler(t *Table) proc1.ProcessorFunc {
 		case message.SubTypeRulerSit:
 			t.broadcast(msg)
 		case message.SubTypeRulerReady:
+			t.players[msg.PlayerCurrent].Ready()
 			t.broadcast(msg)
 			t.ready()
 		case message.SubTypeRulerPlay:
 			t.broadcast(msg)
 			if len(msg.Pokers) == len(t.players[msg.PlayerCurrent].Left()) {
 				t.end(msg.PlayerCurrent)
-			} else {
-				t.playerMaxPokers = msg.PlayerCurrent
-				t.maxPokers = msg.Pokers
-				t.nextPlayer(t.playerCurrent)
+				return
 			}
+
+			player := t.Players()[msg.PlayerCurrent]
+			newleft, err := poker.SubPokers(player.Left(), msg.Pokers)
+			if err != nil {
+				t.sendone(msg.PlayerCurrent, message.GenMessageNoticeError("出的牌不对"))
+				return
+			}
+			player.SetLeft(newleft)
+			player.SetPlayed(append(player.Played(), msg.Pokers...))
+
+			t.playerMaxPokers = msg.PlayerCurrent
+			t.maxPokers = msg.Pokers
+			t.nextPlayer(t.playerCurrent)
 		}
 	}
 }
