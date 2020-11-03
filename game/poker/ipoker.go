@@ -2,17 +2,25 @@ package poker
 
 import "strconv"
 
+// Type 类型
 type Type = int
 
 const (
-	TypeLittleJoker = 10000 // 小王
-	TypeBigJoker    = 10001 // 大王
-	TypeSpade       = 3     // 黑桃
-	TypeHeart       = 2     // 红桃
-	TypeClub        = 1     // 梅花
-	TypeDiamond     = 0     // 方块
+	// TypeLittleJoker 小王
+	TypeLittleJoker Type = 10000
+	// TypeBigJoker 大王
+	TypeBigJoker Type = 10001
+	// TypeSpade 黑桃
+	TypeSpade Type = 3
+	// TypeHeart 红桃
+	TypeHeart Type = 2
+	// TypeClub 梅花
+	TypeClub Type = 1
+	// TypeDiamond 方块
+	TypeDiamond Type = 0
 )
 
+// Value 值
 type Value = int
 
 const (

@@ -103,7 +103,7 @@ func websocketRun(ctx echo.Context) error {
 			continue
 		}
 		if sitted == true {
-			fmt.Println("切换至用户")
+			fmt.Println("conn 交给用户管理 ")
 			break
 		}
 	}

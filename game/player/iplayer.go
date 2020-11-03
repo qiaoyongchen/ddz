@@ -43,14 +43,14 @@ type IPlayer interface {
 
 // Player 玩家
 type Player struct {
-	Name         string               // 玩家姓名
-	I            int                  // 座位号
-	pokersLeft   []poker.IPoker       // 剩余牌
-	pokersPlayed []poker.IPoker       // 出过的牌
-	status       Status               // 状态
-	recv         chan message.Message // 接受频道
-	send         chan message.Message // 发送频道
-	conn         *websocket.Conn      // websocket 连接
+	Name         string               `json:"name"`  // 玩家姓名
+	I            int                  `json:"index"` // 座位号
+	pokersLeft   []poker.IPoker       ``             // 剩余牌
+	pokersPlayed []poker.IPoker       ``             // 出过的牌
+	status       Status               ``             // 状态
+	recv         chan message.Message ``             // 接受频道
+	send         chan message.Message ``             // 发送频道
+	conn         *websocket.Conn      ``             // websocket 连接
 }
 
 // NewPlayer NewPlayer
