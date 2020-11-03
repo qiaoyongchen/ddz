@@ -16,16 +16,21 @@ type IRuler interface {
 type Ruler struct {
 }
 
+// NewRuler NewRuler
+func NewRuler() Ruler {
+	return Ruler{}
+}
+
 // Check 检查这一把牌和上一把牌并返回大小(now > last),如果出错就报错
 // 0 相等, 1 大于, -1 小于
 func (p Ruler) Check(p1 []poker.IPoker, p2 []poker.IPoker) (int, error) {
-	SortPokers(p1, 0, len(p1)-1)
-	SortPokers(p2, 0, len(p2)-1)
-	p1t, p1terr := getPokerType(p1)
+	p.Sort(p1)
+	p.Sort(p2)
+	p1t, p1terr := p.getPokerType(p1)
 	if p1terr != nil {
 		return 0, p1terr
 	}
-	p2t, p2terr := getPokerType(p1)
+	p2t, p2terr := p.getPokerType(p1)
 	if p2terr != nil {
 		return 0, p2terr
 	}
@@ -83,35 +88,35 @@ func (p Ruler) Shuffle(pokers []poker.IPoker) {
 	poker.Shuffle(pokers)
 }
 
-// NewRuler NewRuler
-func NewRuler() Ruler {
-	return Ruler{}
-}
-
-func getPokerType(p []poker.IPoker) (pokertype.PokerType, error) {
-	if pokertype.IsSingle(p) {
-		return pokertype.NewSingle(p), nil
+func (p Ruler) getPokerType(ps []poker.IPoker) (pokertype.PokerType, error) {
+	if pokertype.IsSingle(ps) {
+		return pokertype.NewSingle(ps), nil
 	}
-	if pokertype.IsPair(p) {
-		return pokertype.NewPair(p), nil
+	if pokertype.IsPair(ps) {
+		return pokertype.NewPair(ps), nil
 	}
-	if pokertype.IsThreeWithOne(p) {
-		return pokertype.NewThreeWithOne(p), nil
+	if pokertype.IsThreeWithOne(ps) {
+		return pokertype.NewThreeWithOne(ps), nil
 	}
-	if pokertype.IsThreeWithTwo(p) {
-		return pokertype.NewThreeWithTwo(p), nil
+	if pokertype.IsThreeWithTwo(ps) {
+		return pokertype.NewThreeWithTwo(ps), nil
 	}
-	if pokertype.IsSequence(p) {
-		return pokertype.NewSequence(p), nil
+	if pokertype.IsSequence(ps) {
+		return pokertype.NewSequence(ps), nil
 	}
-	if pokertype.IsFourBoom(p) {
-		return pokertype.NewFourBoom(p), nil
+	if pokertype.IsFourBoom(ps) {
+		return pokertype.NewFourBoom(ps), nil
 	}
-	if pokertype.IsFlushBoom(p) {
-		return pokertype.NewFlushBoom(p), nil
+	if pokertype.IsFlushBoom(ps) {
+		return pokertype.NewFlushBoom(ps), nil
 	}
-	if pokertype.IsJokerBoom(p) {
-		return pokertype.NewJokerBoom(p), nil
+	if pokertype.IsJokerBoom(ps) {
+		return pokertype.NewJokerBoom(ps), nil
 	}
 	return nil, errors.New("出牌不符合规格")
+}
+
+// Sort 排序扑克牌
+func (p Ruler) Sort(ps []poker.IPoker) {
+	sortPokers(ps, 0, len(ps)-1)
 }

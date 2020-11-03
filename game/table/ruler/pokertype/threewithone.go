@@ -17,9 +17,9 @@ func IsThreeWithOne(pokers []poker.IPoker) bool {
 		pokers[1].Value() == pokers[2].Value() &&
 		pokers[2].Value() == pokers[3].Value()) ||
 
-		(pokers[4].Value() != pokers[3].Value() &&
-			pokers[3].Value() == pokers[2].Value() &&
-			pokers[2].Value() == pokers[1].Value())
+		(pokers[3].Value() != pokers[2].Value() &&
+			pokers[0].Value() == pokers[1].Value() &&
+			pokers[1].Value() == pokers[2].Value())
 }
 
 // NewThreeWithOne NewThreeWithOne

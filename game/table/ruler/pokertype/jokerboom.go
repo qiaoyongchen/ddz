@@ -30,8 +30,8 @@ func (p JokerBoom) Type() int {
 // Value Value
 func (p JokerBoom) Value() int {
 	pokersValue := 0
-	for _, p := range p.pokers {
-		pokersValue += p.Value()
+	for _, _p := range p.pokers {
+		pokersValue += _p.Value()
 	}
 	return pokersValue * p.Type()
 }

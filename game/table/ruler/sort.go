@@ -5,9 +5,10 @@ import (
 )
 
 // SortPokers SortPokers
-func SortPokers(pokers []poker.IPoker, l int, r int) {
+func sortPokers(pokers []poker.IPoker, l int, r int) {
 	ll := l
 	rr := r
+
 	if l >= r {
 		return
 	}
@@ -24,7 +25,7 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 				continue
 			}
 		} else {
-			if pokers[2].CompareTo(flagPoker) == -1 {
+			if pokers[r].CompareTo(flagPoker) == -1 {
 				pokers[l] = pokers[r]
 				l++
 				trunLeft = true
@@ -35,6 +36,7 @@ func SortPokers(pokers []poker.IPoker, l int, r int) {
 		}
 	}
 	pokers[l] = flagPoker
-	SortPokers(pokers, ll, l)
-	SortPokers(pokers, l+1, rr)
+
+	sortPokers(pokers, ll, l)
+	sortPokers(pokers, l+1, rr)
 }

@@ -120,6 +120,8 @@ func (p *Player) startListening() {
 		_, msg, err := p.conn.ReadMessage()
 		if err != nil {
 			log.Println("player read message error: ", err)
+			log.Println("player break")
+			p.status = Break
 			break
 		}
 
@@ -146,6 +148,11 @@ func (p *Player) SetRevc(recv chan message.Message) {
 		for {
 			select {
 			case msg := <-p.recv:
+				if p.status == Break {
+					fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
+					fmt.Println(strconv.Itoa(p.I) + "号玩家已掉线, 消息丢失")
+					continue
+				}
 				p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
 				fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
 			}
@@ -161,9 +168,4 @@ func (p *Player) SetSend(send chan message.Message) {
 // GetName GetName
 func (p *Player) GetName() string {
 	return p.Name
-}
-
-// Chat 聊天
-func (p *Player) Chat(msg message.Message) {
-	msg.Send(p.send)
 }
