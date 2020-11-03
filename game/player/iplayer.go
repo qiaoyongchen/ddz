@@ -120,7 +120,7 @@ func (p *Player) startListening() {
 		_, msg, err := p.conn.ReadMessage()
 		if err != nil {
 			log.Println("player read message error: ", err)
-			continue
+			break
 		}
 
 		log.Printf("player recv: %s", msg)
