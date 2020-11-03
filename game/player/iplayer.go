@@ -140,8 +140,7 @@ func (p *Player) startListening() {
 	}
 }
 
-// SetRevc 玩家设置接受牌桌信息的管道
-// 设置完立刻监听
+// SetRevc 玩家设置接受牌桌信息的管道, 设置完立刻监听
 func (p *Player) SetRevc(recv chan message.Message) {
 	p.recv = recv
 	go func() {

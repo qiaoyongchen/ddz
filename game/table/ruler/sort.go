@@ -4,7 +4,7 @@ import (
 	"ddz/game/poker"
 )
 
-// SortPokers SortPokers
+// SortPokers 快速排序
 func sortPokers(pokers []poker.IPoker, l int, r int) {
 	ll := l
 	rr := r

@@ -21,8 +21,7 @@ func NewRuler() Ruler {
 	return Ruler{}
 }
 
-// Check 检查这一把牌和上一把牌并返回大小(now > last),如果出错就报错
-// 0 相等, 1 大于, -1 小于
+// Check 检查这一把牌和上一把牌并返回大小(now > last),如果出错就报错, 0 相等, 1 大于, -1 小于
 func (p Ruler) Check(p1 []poker.IPoker, p2 []poker.IPoker) (int, error) {
 	p.Sort(p1)
 	p.Sort(p2)
