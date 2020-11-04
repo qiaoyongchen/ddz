@@ -11,6 +11,9 @@ import (
 func SubPokers(origin []IPoker, toSub []IPoker) ([]IPoker, error) {
 	left := make([]IPoker, 0, len(origin)-len(toSub))
 	for _, pk := range origin {
+		if len(toSub) == 0 {
+			left = append(left, pk)
+		}
 		for _, pkk := range toSub {
 			if pk.CompareTo(pkk) != 0 {
 				left = append(left, pk)

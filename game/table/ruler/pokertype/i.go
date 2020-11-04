@@ -8,14 +8,24 @@ import (
 type Type = int
 
 const (
-	TypeJokerBoom    = 1000 // 王炸
-	TypeFlushBoom    = 100  // 同花顺
-	TypeFourBoom     = 10   // 四个炸
-	TypeThreeWithTwo = 5    // 三带二
-	TypeThreeWithOne = 4    // 三带一
-	TypeSequence     = 3    // 顺子
-	TypePair         = 2    // 对
-	TypeSingle       = 1    // 单张
+	// TypeJokerBoom 王炸
+	TypeJokerBoom Type = 1000
+	// TypeFlushBoom 同花顺
+	TypeFlushBoom Type = 100
+	// TypeFourBoom 四个炸
+	TypeFourBoom Type = 10
+	// TypeThreeWithTwo 三带二
+	TypeThreeWithTwo Type = 5
+	// TypeThreeWithOne 三带一
+	TypeThreeWithOne Type = 4
+	// TypeSequence 顺子
+	TypeSequence Type = 3
+	// TypePair 对
+	TypePair Type = 2
+	// TypeSingle 单张
+	TypeSingle Type = 1
+	// TypeEmpty 空
+	TypeEmpty Type = 0
 )
 
 // PokerType 牌型

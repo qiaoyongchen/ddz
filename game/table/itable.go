@@ -6,6 +6,7 @@ import (
 	"ddz/game/poker"
 	"ddz/game/proc1"
 	"ddz/game/table/ruler"
+	"fmt"
 
 	"errors"
 	"time"
@@ -58,6 +59,7 @@ type Table struct {
 	playerMaxPokers int                              // 当前最大牌的出牌玩家
 	playerCurrent   int                              // 当前出牌人
 	processors      map[message.Type]proc1.Processor // 消息处理器
+	ifNewCircle     bool                             // 是否是新的一轮
 }
 
 // NewTable 新建一个牌桌
@@ -82,7 +84,7 @@ func NewTable(i int) *Table {
 
 	setter, _ := t.getSetProcessor()
 	setter(message.TypeChat, proc4Chat(t))
-	setter(message.TypeRuler, mw4PlayIsMyTurn(t)(proc4Ruler(t)))
+	setter(message.TypeRuler, mw4PlayIsMyTurn(t)(mw4PlayBigThanLast(t)(proc4Ruler(t))))
 
 	return t
 }
@@ -167,10 +169,22 @@ func (p *Table) ready() {
 //切换到下一个用户
 func (p *Table) nextPlayer(current int) {
 	var _nextPlayer = func(current int) int {
-		return (current + 1) % len(p.players)
+		return (current + 1) % p.full
 	}(current)
+
+	fmt.Println("切换出牌玩家:现在轮到第", _nextPlayer, "位玩家, from :", current)
+
 	p.playerCurrent = _nextPlayer
-	p.broadcast(message.GenMessageChangePlayer(_nextPlayer))
+	p.broadcast(message.GenMessageChangePlayer(_nextPlayer, _nextPlayer == p.playerMaxPokers))
+
+	var autoSetIfNewCircle = func() {
+		if p.playerCurrent == p.playerMaxPokers {
+			p.ifNewCircle = true
+			p.maxPokers = []poker.IPoker{}
+			fmt.Println("一轮出牌结束,开始重新一轮出牌")
+		}
+	}
+	autoSetIfNewCircle()
 }
 
 func (p *Table) broadcast(msg message.Message) {

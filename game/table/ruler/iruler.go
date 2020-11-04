@@ -29,12 +29,17 @@ func (p Ruler) Check(p1 []poker.IPoker, p2 []poker.IPoker) (int, error) {
 	if p1terr != nil {
 		return 0, p1terr
 	}
-	p2t, p2terr := p.getPokerType(p1)
+	p2t, p2terr := p.getPokerType(p2)
 	if p2terr != nil {
 		return 0, p2terr
 	}
 	if !p1t.IsBoom() && !p2t.IsBoom() {
 		if p1t.Type() != p2t.Type() {
+			if p1t.Type() == pokertype.TypeEmpty {
+				return -1, nil
+			} else if p2t.Type() == pokertype.TypeEmpty {
+				return 1, nil
+			}
 			return 0, errors.New("牌型不匹配")
 		}
 		if p1t.Value() > p2t.Value() {
@@ -88,30 +93,42 @@ func (p Ruler) Shuffle(pokers []poker.IPoker) {
 }
 
 func (p Ruler) getPokerType(ps []poker.IPoker) (pokertype.PokerType, error) {
+	if pokertype.IsEmpty(ps) {
+		return pokertype.NewEmpty(), nil
+	}
+
 	if pokertype.IsSingle(ps) {
 		return pokertype.NewSingle(ps), nil
 	}
+
 	if pokertype.IsPair(ps) {
 		return pokertype.NewPair(ps), nil
 	}
+
 	if pokertype.IsThreeWithOne(ps) {
 		return pokertype.NewThreeWithOne(ps), nil
 	}
+
 	if pokertype.IsThreeWithTwo(ps) {
 		return pokertype.NewThreeWithTwo(ps), nil
 	}
+
 	if pokertype.IsSequence(ps) {
 		return pokertype.NewSequence(ps), nil
 	}
+
 	if pokertype.IsFourBoom(ps) {
 		return pokertype.NewFourBoom(ps), nil
 	}
+
 	if pokertype.IsFlushBoom(ps) {
 		return pokertype.NewFlushBoom(ps), nil
 	}
+
 	if pokertype.IsJokerBoom(ps) {
 		return pokertype.NewJokerBoom(ps), nil
 	}
+
 	return nil, errors.New("出牌不符合规格")
 }
 

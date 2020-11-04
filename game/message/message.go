@@ -61,6 +61,7 @@ type Message struct {
 	Pokers             []poker.IPoker `json:"pokers"`               // 牌
 	TableIndex         int            `json:"table_index"`          // 第几桌
 	TablePositionIndex int            `json:"table_position_index"` // 这桌第几个位置
+	NewCircle          bool           `json:"new_circle"`           // 新的一轮出牌
 	Data               interface{}    `json:"data"`                 // 携带的其他数据
 }
 
@@ -121,11 +122,12 @@ func GenMessageEnd() Message {
 }
 
 // GenMessageChangePlayer 更换出派人消息
-func GenMessageChangePlayer(nextPlayerIndex int) Message {
+func GenMessageChangePlayer(nextPlayerIndex int, newCircle bool) Message {
 	return Message{
 		T:             TypeRuler,
 		ST:            SubTypeRulerChangePlayer,
 		PlayerCurrent: nextPlayerIndex,
+		NewCircle:     newCircle,
 	}
 }
 

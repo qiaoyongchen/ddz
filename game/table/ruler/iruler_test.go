@@ -70,3 +70,11 @@ func TestPkt(t *testing.T) {
 		fmt.Println()
 	}
 }
+
+func TestCheck(t *testing.T) {
+	r := NewRuler()
+	rst, rste := r.Check([]poker.IPoker{poker.NewPoker(1, 3)}, []poker.IPoker{})
+	fmt.Println("")
+	fmt.Println(rst)
+	fmt.Println(rste)
+}

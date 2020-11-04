@@ -39,6 +39,7 @@ type IPlayer interface {
 	SetRevc(chan message.Message) // 设置接受管道
 	SetSend(chan message.Message) // 设置发送管道
 	GetName() string              // 玩家名字
+	Index() int                   // 玩家编号
 }
 
 // Player 玩家
@@ -125,7 +126,7 @@ func (p *Player) startListening() {
 			break
 		}
 
-		log.Printf("player recv: %s", msg)
+		log.Printf("player "+strconv.Itoa(p.I)+"recv: %s", msg)
 
 		_msg, _msgErr := message.Decode(msg)
 		_msg.PlayerCurrent = p.I
@@ -167,4 +168,9 @@ func (p *Player) SetSend(send chan message.Message) {
 // GetName GetName
 func (p *Player) GetName() string {
 	return p.Name
+}
+
+// Index Index
+func (p *Player) Index() int {
+	return p.I
 }
