@@ -31,10 +31,6 @@ func proc4Ruler(t *Table) proc1.ProcessorFunc {
 		case message.SubTypeRulerPlay:
 			if len(msg.Pokers) == 0 {
 				t.broadcast(msg)
-				fmt.Println("--------------------------------------------")
-				fmt.Println("切换出牌用户之前的玩家:", msg.PlayerCurrent)
-				fmt.Println("切换出牌用户之前收到的消息:", msg)
-				fmt.Println("--------------------------------------------")
 				t.nextPlayer(msg.PlayerCurrent)
 				return
 			}
