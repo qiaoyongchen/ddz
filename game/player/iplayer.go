@@ -190,7 +190,9 @@ func (p *Player) RelinkWhenBreaking(conn *websocket.Conn) error {
 	}
 	// 如果确实断线了则设置连接并重新开始监听
 	p.conn = conn
+	p.IsBreak = false
 	go p.startListening()
+	fmt.Println("玩家 ", p.I, "已断线重连成功")
 	return nil
 }
 

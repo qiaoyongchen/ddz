@@ -59,6 +59,27 @@ func websocketRun(ctx echo.Context) error {
 		ctx.JSON(http.StatusOK, "upgrade error")
 		return nil
 	}
+
+	// -----------------------------自动检测断线重连开始-------------------------------------
+	// TODO 这块业务逻辑需要重写先暂时这么实现
+	_room := game.GetRoom()
+	tables := _room.Tables()
+	for _, _table := range tables {
+		players := _table.Players()
+		for _, _player := range players {
+			if _player != nil && _player.IfBreak() {
+				relinkErr := _player.RelinkWhenBreaking(conn)
+				if relinkErr != nil {
+					conn.WriteMessage(websocket.TextMessage,
+						message.Encode(message.GenMessageNoticeError(relinkErr.Error())))
+				} else {
+					return nil
+				}
+			}
+		}
+	}
+	// -----------------------------自动检测断线重连结束-------------------------------------
+
 	conn.WriteMessage(websocket.TextMessage,
 		message.Encode(message.GenMessageRoomInfo(game.GetRoomInfo())))
 	for {
@@ -76,7 +97,9 @@ func websocketRun(ctx echo.Context) error {
 				message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
 			continue
 		}
+
 		sitted := false
+
 		switch _msg.T {
 		case message.TypeRuler:
 			switch _msg.ST {
@@ -85,39 +108,24 @@ func websocketRun(ctx echo.Context) error {
 				_room := game.GetRoom()
 				_room.Tables()[_msg.TableIndex].PlayerSit(_msg.TablePositionIndex, p)
 				sitted = true
-				break
+				goto ENDING
 			default:
-				continue
+				goto ENDING
 			}
 		case message.TypeRoom:
 			switch _msg.ST {
 			case message.SubTypeGetRoomInfo:
 				conn.WriteMessage(websocket.TextMessage,
 					message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
+				goto ENDING
 			default:
-				continue
-			}
-		case message.TypeNotice:
-			switch _msg.ST {
-			case message.SubTypeNoticeRelink:
-				_room := game.GetRoom()
-				_table := _room.Tables()[_msg.TableIndex]
-				_player := _table.Players()[_msg.TablePositionIndex]
-				relinkErr := _player.RelinkWhenBreaking(conn)
-				if relinkErr != nil {
-					conn.WriteMessage(websocket.TextMessage,
-						message.Encode(message.GenMessageNoticeError(relinkErr.Error())))
-					break
-				} else {
-					sitted = true
-					break
-				}
-			default:
-				continue
+				goto ENDING
 			}
 		default:
-			continue
+			goto ENDING
 		}
+
+	ENDING:
 		if sitted == true {
 			fmt.Println("conn 交给用户管理 ")
 			break
