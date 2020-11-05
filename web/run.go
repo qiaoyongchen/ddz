@@ -59,7 +59,8 @@ func websocketRun(ctx echo.Context) error {
 		ctx.JSON(http.StatusOK, "upgrade error")
 		return nil
 	}
-	conn.WriteMessage(websocket.TextMessage, message.Encode(message.GenMessageRoomInfo(game.GetRoomInfo())))
+	conn.WriteMessage(websocket.TextMessage,
+		message.Encode(message.GenMessageRoomInfo(game.GetRoomInfo())))
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -71,7 +72,8 @@ func websocketRun(ctx echo.Context) error {
 
 		_msg, _msgErr := message.Decode(msg)
 		if _msgErr != nil {
-			conn.WriteMessage(websocket.TextMessage, message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
+			conn.WriteMessage(websocket.TextMessage,
+				message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
 			continue
 		}
 		sitted := false
@@ -90,7 +92,8 @@ func websocketRun(ctx echo.Context) error {
 		case message.TypeRoom:
 			switch _msg.ST {
 			case message.SubTypeGetRoomInfo:
-				conn.WriteMessage(websocket.TextMessage, message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
+				conn.WriteMessage(websocket.TextMessage,
+					message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
 			default:
 				continue
 			}
@@ -98,9 +101,12 @@ func websocketRun(ctx echo.Context) error {
 			switch _msg.ST {
 			case message.SubTypeNoticeRelink:
 				_room := game.GetRoom()
-				relinkErr := _room.Tables()[_msg.TableIndex].Players()[_msg.TablePositionIndex].RelinkWhenBreaking(conn)
+				_table := _room.Tables()[_msg.TableIndex]
+				_player := _table.Players()[_msg.TablePositionIndex]
+				relinkErr := _player.RelinkWhenBreaking(conn)
 				if relinkErr != nil {
-					conn.WriteMessage(websocket.TextMessage, message.Encode(message.GenMessageNoticeError(relinkErr.Error())))
+					conn.WriteMessage(websocket.TextMessage,
+						message.Encode(message.GenMessageNoticeError(relinkErr.Error())))
 					break
 				} else {
 					sitted = true
