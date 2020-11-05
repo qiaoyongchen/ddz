@@ -6,7 +6,6 @@ import (
 	"ddz/game/message"
 	"ddz/game/player"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -55,7 +54,7 @@ func test(ctx echo.Context) error {
 func websocketRun(ctx echo.Context) error {
 	conn, err := upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 	if err != nil {
-		log.Print("upgrade error: ", err)
+		fmt.Println("upgrade error: ", err)
 		ctx.JSON(http.StatusOK, "upgrade error")
 		return nil
 	}
@@ -85,11 +84,11 @@ func websocketRun(ctx echo.Context) error {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("read message: ", err)
+			fmt.Println("read message: ", err)
 			ctx.JSON(http.StatusOK, "read message error")
 			break
 		}
-		log.Printf("recv: %s", msg)
+		fmt.Println("recv: ", msg)
 
 		_msg, _msgErr := message.Decode(msg)
 		if _msgErr != nil {
