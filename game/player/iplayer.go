@@ -122,25 +122,18 @@ func (p *Player) Restart() {
 func (p *Player) startListening() {
 	for {
 		_, msg, err := p.conn.ReadMessage()
-		// TODO 断线处理需要重新修改
 		if err != nil {
 			log.Println("player read message error: ", err)
-			log.Println("player break")
-			//p.status = Break
+			p.Break()
 			break
 		}
-
-		log.Printf("player ["+strconv.Itoa(p.I)+"] recv: %s", msg)
-
+		fmt.Println("player ", p.I, " recv: ", msg)
 		_msg, _msgErr := message.Decode(msg)
-		_msg.PlayerCurrent = p.I
-
 		if _msgErr != nil {
-			errorMsg := message.GenMessageNoticeError("pleyer 解析消息失败: " + _msgErr.Error())
-			p.conn.WriteMessage(websocket.TextMessage, message.Encode(errorMsg))
+			p.writeConnMessage(message.GenMessageNoticeError("pleyer 解析消息失败: " + _msgErr.Error()))
 			continue
 		}
-
+		_msg.PlayerCurrent = p.I
 		p.send <- _msg
 	}
 }
@@ -153,16 +146,9 @@ func (p *Player) SetRevc(recv chan message.Message) {
 			select {
 			case msg := <-p.recv:
 				fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
+				p.writeConnMessage(msg)
 
-				/* TODO
-				if p.status == Break {
-					fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
-					fmt.Println(strconv.Itoa(p.I) + "号玩家已掉线, 消息丢失")
-					continue
-				}
-				*/
-				// TODO
-				p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
+				// TODO 如果在打牌中断线自动出牌(要不起)
 			}
 		}
 	}()
@@ -190,11 +176,21 @@ func (p *Player) IfBreak() bool {
 
 // Break 断线
 func (p *Player) Break() {
+	p.IsBreak = true
+	p.conn = nil
+	log.Println("玩家 ", p.I, " : 断线")
 	return
 }
 
 // RelinkWhenBreaking 断线重连
-func RelinkWhenBreaking(conn *websocket.Conn) error {
+func (p *Player) RelinkWhenBreaking(conn *websocket.Conn) error {
+	// 如果该玩家未断线,报错
+	if !p.IsBreak {
+		return errors.New("该位置已经有人了")
+	}
+	// 如果确实断线了则设置连接并重新开始监听
+	p.conn = conn
+	go p.startListening()
 	return nil
 }
 
@@ -209,5 +205,5 @@ func (p *Player) writeConnMessage(msg message.Message) {
 		return
 	}
 	// 断线
-	fmt.Println("玩家", p.I, " 断线消息丢弃")
+	fmt.Println("玩家", p.I, " 断线消息丢弃: ", msg)
 }

@@ -49,6 +49,8 @@ const (
 	SubTypeRulerWinner SubType = 7
 	// SubTypeRoomInfo 显示房间信息
 	SubTypeRoomInfo SubType = 0
+	// SubTypeGetRoomInfo 请求获取显示房间信息
+	SubTypeGetRoomInfo SubType = 1
 )
 
 // Message 消息
@@ -167,11 +169,20 @@ func GenMessageRulerSit(playerIndex int) Message {
 	}
 }
 
-// GenMessageChat 聊天xiaoxi
+// GenMessageChat 聊天消息
 func GenMessageChat(playerIndex int, content string) Message {
 	return Message{
 		T:             TypeChat,
 		Chat:          content,
 		PlayerCurrent: playerIndex,
+	}
+}
+
+// GenMessageRoomInfo 房间信息
+func GenMessageRoomInfo(data interface{}) Message {
+	return Message{
+		T:    TypeRoom,
+		ST:   SubTypeRoomInfo,
+		Data: data,
 	}
 }
