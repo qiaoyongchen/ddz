@@ -200,7 +200,7 @@ func (p *Player) RelinkWhenBreaking(conn *websocket.Conn) error {
 func (p *Player) writeConnMessage(msg message.Message) {
 	// 尚未断线
 	if !p.IsBreak {
-		writeErr := p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
+		writeErr := msg.WriteConn(p.conn)
 		if writeErr != nil {
 			fmt.Println("玩家", p.I, " 发送websocket消息错误: ", writeErr.Error())
 		}

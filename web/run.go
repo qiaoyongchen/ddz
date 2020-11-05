@@ -55,7 +55,6 @@ func websocketRun(ctx echo.Context) error {
 	conn, err := upgrader.Upgrade(ctx.Response(), ctx.Request(), nil)
 	if err != nil {
 		fmt.Println("upgrade error: ", err)
-		ctx.JSON(http.StatusOK, "upgrade error")
 		return nil
 	}
 
@@ -69,8 +68,7 @@ func websocketRun(ctx echo.Context) error {
 			if _player != nil && _player.IfBreak() {
 				relinkErr := _player.RelinkWhenBreaking(conn)
 				if relinkErr != nil {
-					conn.WriteMessage(websocket.TextMessage,
-						message.Encode(message.GenMessageNoticeError(relinkErr.Error())))
+					message.GenMessageNoticeError(relinkErr.Error()).WriteConn(conn)
 				} else {
 					return nil
 				}
@@ -79,21 +77,19 @@ func websocketRun(ctx echo.Context) error {
 	}
 	// -----------------------------自动检测断线重连结束-------------------------------------
 
-	conn.WriteMessage(websocket.TextMessage,
-		message.Encode(message.GenMessageRoomInfo(game.GetRoomInfo())))
+	message.GenMessageRoomInfo(game.GetRoomInfo()).WriteConn(conn)
+
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			fmt.Println("read message: ", err)
-			ctx.JSON(http.StatusOK, "read message error")
 			break
 		}
 		fmt.Println("recv: ", msg)
 
 		_msg, _msgErr := message.Decode(msg)
 		if _msgErr != nil {
-			conn.WriteMessage(websocket.TextMessage,
-				message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
+			message.GenMessageNoticeError("解析消息失败: " + _msgErr.Error()).WriteConn(conn)
 			continue
 		}
 
@@ -114,8 +110,7 @@ func websocketRun(ctx echo.Context) error {
 		case message.TypeRoom:
 			switch _msg.ST {
 			case message.SubTypeGetRoomInfo:
-				conn.WriteMessage(websocket.TextMessage,
-					message.Encode(message.GenMessageNoticeError("解析消息失败: "+_msgErr.Error())))
+				message.GenMessageNoticeError("解析消息失败: " + _msgErr.Error()).WriteConn(conn)
 				goto ENDING
 			default:
 				goto ENDING

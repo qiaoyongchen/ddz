@@ -3,6 +3,8 @@ package message
 import (
 	"ddz/game/poker"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 // Type 消息类型
@@ -70,6 +72,11 @@ type Message struct {
 // Send 发送消息
 func (p Message) Send(ch chan<- Message) {
 	ch <- p
+}
+
+// WriteConn 写入到websocket
+func (p Message) WriteConn(conn *websocket.Conn) error {
+	return conn.WriteMessage(websocket.TextMessage, Encode(p))
 }
 
 // String 消息转换为字符形式(用于测试)
