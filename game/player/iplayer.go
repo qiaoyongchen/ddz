@@ -16,42 +16,45 @@ import (
 type Status = int8
 
 const (
-	// Break 断线
-	Break Status = -1
 	// Sit 已就坐
 	Sit Status = 0
 	// Ready 已准备
 	Ready Status = 1
-	// Playing 进行中
+	// Playing 游戏进行中
 	Playing Status = 2
+	// Leisure 空闲
+	Leisure Status = 3
 )
 
 // IPlayer 玩家
 type IPlayer interface {
-	Left() []poker.IPoker         // 剩余牌
-	SetLeft([]poker.IPoker)       // 设置剩余牌数
-	Played() []poker.IPoker       // 出过的牌
-	SetPlayed([]poker.IPoker)     // 设置出过的牌
-	Status() Status               // 状态
-	Sit(int) error                // 坐在牌桌了
-	Ready() error                 // 准备
-	Restart()                     // 重新开始
-	SetRevc(chan message.Message) // 设置接受管道
-	SetSend(chan message.Message) // 设置发送管道
-	GetName() string              // 玩家名字
-	Index() int                   // 玩家编号
+	Left() []poker.IPoker                     // 剩余牌
+	SetLeft([]poker.IPoker)                   // 设置剩余牌数
+	Played() []poker.IPoker                   // 出过的牌
+	SetPlayed([]poker.IPoker)                 // 设置出过的牌
+	Status() Status                           // 状态
+	Sit(int) error                            // 坐在牌桌了
+	Ready() error                             // 准备
+	Restart()                                 // 重新开始
+	SetRevc(chan message.Message)             // 设置接受管道
+	SetSend(chan message.Message)             // 设置发送管道
+	GetName() string                          // 玩家名字
+	Index() int                               // 玩家编号
+	IfBreak() bool                            // 是否处于断线
+	RelinkWhenBreaking(*websocket.Conn) error // 断线时重连
 }
 
 // Player 玩家
 type Player struct {
-	Name         string               `json:"name"`  // 玩家姓名
-	I            int                  `json:"index"` // 座位号
-	pokersLeft   []poker.IPoker       ``             // 剩余牌
-	pokersPlayed []poker.IPoker       ``             // 出过的牌
-	status       Status               ``             // 状态
-	recv         chan message.Message ``             // 接受频道
-	send         chan message.Message ``             // 发送频道
-	conn         *websocket.Conn      ``             // websocket 连接
+	Name         string               `json:"name"`     // 玩家姓名
+	I            int                  `json:"index"`    // 座位号
+	pokersLeft   []poker.IPoker       ``                // 剩余牌
+	pokersPlayed []poker.IPoker       ``                // 出过的牌
+	status       Status               ``                // 状态
+	recv         chan message.Message ``                // 接受频道
+	send         chan message.Message ``                // 发送频道
+	conn         *websocket.Conn      ``                // websocket 连接
+	IsBreak      bool                 `json:"is_break"` // 是否处于断线状态
 }
 
 // NewPlayer NewPlayer
@@ -119,14 +122,15 @@ func (p *Player) Restart() {
 func (p *Player) startListening() {
 	for {
 		_, msg, err := p.conn.ReadMessage()
+		// TODO 断线处理需要重新修改
 		if err != nil {
 			log.Println("player read message error: ", err)
 			log.Println("player break")
-			p.status = Break
+			//p.status = Break
 			break
 		}
 
-		log.Printf("player "+strconv.Itoa(p.I)+"recv: %s", msg)
+		log.Printf("player ["+strconv.Itoa(p.I)+"] recv: %s", msg)
 
 		_msg, _msgErr := message.Decode(msg)
 		_msg.PlayerCurrent = p.I
@@ -148,13 +152,17 @@ func (p *Player) SetRevc(recv chan message.Message) {
 		for {
 			select {
 			case msg := <-p.recv:
+				fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
+
+				/* TODO
 				if p.status == Break {
 					fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
 					fmt.Println(strconv.Itoa(p.I) + "号玩家已掉线, 消息丢失")
 					continue
 				}
+				*/
+				// TODO
 				p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
-				fmt.Println(strconv.Itoa(p.I) + "号玩家 recv: " + msg.String())
 			}
 		}
 	}()
@@ -173,4 +181,33 @@ func (p *Player) GetName() string {
 // Index Index
 func (p *Player) Index() int {
 	return p.I
+}
+
+// IfBreak 是否断线
+func (p *Player) IfBreak() bool {
+	return p.IsBreak
+}
+
+// Break 断线
+func (p *Player) Break() {
+	return
+}
+
+// RelinkWhenBreaking 断线重连
+func RelinkWhenBreaking(conn *websocket.Conn) error {
+	return nil
+}
+
+// 发送websocket消息
+func (p *Player) writeConnMessage(msg message.Message) {
+	// 尚未断线
+	if !p.IsBreak {
+		writeErr := p.conn.WriteMessage(websocket.TextMessage, message.Encode(msg))
+		if writeErr != nil {
+			fmt.Println("玩家", p.I, " 发送websocket消息错误: ", writeErr.Error())
+		}
+		return
+	}
+	// 断线
+	fmt.Println("玩家", p.I, " 断线消息丢弃")
 }
