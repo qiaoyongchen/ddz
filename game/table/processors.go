@@ -14,6 +14,13 @@ func proc4Chat(t *Table) proc1.ProcessorFunc {
 	}
 }
 
+// 通知
+func proc4Notice(t *Table) proc1.ProcessorFunc {
+	return func(msg message.Message) {
+		t.broadcast(msg)
+	}
+}
+
 // 按规则玩牌中
 func proc4Ruler(t *Table) proc1.ProcessorFunc {
 	return func(msg message.Message) {

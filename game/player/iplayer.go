@@ -193,6 +193,7 @@ func (p *Player) RelinkWhenBreaking(conn *websocket.Conn) error {
 	p.IsBreak = false
 	go p.startListening()
 	fmt.Println("玩家 ", p.I, "已断线重连成功")
+	message.GenMessageNoticeRelink(p.I).Send(p.send)
 	return nil
 }
 

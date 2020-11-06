@@ -193,3 +193,12 @@ func GenMessageRoomInfo(data interface{}) Message {
 		Data: data,
 	}
 }
+
+// GenMessageNoticeRelink 生成断线重连消息
+func GenMessageNoticeRelink(playerIndex int) Message {
+	return Message{
+		T:             TypeNotice,
+		ST:            SubTypeNoticeRelink,
+		PlayerCurrent: playerIndex,
+	}
+}

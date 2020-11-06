@@ -85,7 +85,7 @@ func NewTable(i int) *Table {
 	setter, _ := t.getSetProcessor()
 	setter(message.TypeChat, proc4Chat(t))
 	setter(message.TypeRuler, mw4PlayIsMyTurn(t)(mw4PlayBigThanLast(t)(proc4Ruler(t))))
-
+	setter(message.TypeNotice, proc4Notice(t))
 	return t
 }
 
