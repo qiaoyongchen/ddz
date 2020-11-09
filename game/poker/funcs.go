@@ -13,11 +13,17 @@ func SubPokers(origin []IPoker, toSub []IPoker) ([]IPoker, error) {
 	for _, pk := range origin {
 		if len(toSub) == 0 {
 			left = append(left, pk)
+			continue
 		}
+		inFlag := false
 		for _, pkk := range toSub {
-			if pk.CompareTo(pkk) != 0 {
-				left = append(left, pk)
+			if pk.CompareTo(pkk) == 0 {
+				inFlag = true
+				break
 			}
+		}
+		if !inFlag {
+			left = append(left, pk)
 		}
 	}
 	if (len(left) + len(toSub)) != len(origin) {
