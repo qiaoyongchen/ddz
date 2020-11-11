@@ -208,6 +208,11 @@ func (p *Table) end(winner int) {
 		}
 	}
 	p.broadcast(message.GenMessageWinner(winner))
-	p.broadcast(message.GenMessageEnd())
+	pokers := [4][]poker.IPoker{}
+	pokers[0] = p.players[0].Left()
+	pokers[1] = p.players[1].Left()
+	pokers[2] = p.players[2].Left()
+	pokers[3] = p.players[3].Left()
+	p.broadcast(message.GenMessageEnd(pokers))
 	restart()
 }

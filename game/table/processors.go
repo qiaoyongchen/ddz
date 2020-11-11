@@ -76,7 +76,14 @@ func proc4Ruler(t *Table) proc1.ProcessorFunc {
 			fmt.Println("当前最大牌:", t.maxPokers)
 			fmt.Println("当前最大牌玩家", t.playerMaxPokers)
 
+			playersLeftCount := [4]int{}
+			playersLeftCount[0] = len(t.players[0].Left())
+			playersLeftCount[1] = len(t.players[1].Left())
+			playersLeftCount[2] = len(t.players[2].Left())
+			playersLeftCount[3] = len(t.players[3].Left())
+			msg.Data = playersLeftCount
 			t.broadcast(msg)
+
 			t.nextPlayer(t.playerCurrent)
 		}
 	}

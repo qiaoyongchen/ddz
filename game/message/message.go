@@ -122,11 +122,12 @@ func GenMessageWinner(winnerIndex int) Message {
 }
 
 // GenMessageEnd 一局结束消息
-func GenMessageEnd() Message {
+func GenMessageEnd(data interface{}) Message {
 	return Message{
 		T:             TypeRuler,
 		ST:            SubTypeRulerEnd,
 		PlayerCurrent: -1,
+		Data:          data,
 	}
 }
 
