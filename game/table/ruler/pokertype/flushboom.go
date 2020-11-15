@@ -16,6 +16,7 @@ func IsFlushBoom(pokers []poker.IPoker) bool {
 		poker.TypeDiamond:     0,
 		poker.TypeClub:        0,
 		poker.TypeHeart:       0,
+		poker.TypeSpade:       0,
 		poker.TypeLittleJoker: 0,
 		poker.TypeBigJoker:    0,
 	}
